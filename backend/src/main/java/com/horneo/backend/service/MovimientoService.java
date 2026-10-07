@@ -12,6 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.horneo.backend.entity.MateriaPrima;
 import com.horneo.backend.entity.Movimiento;
 import com.horneo.backend.entity.Producto;
+import com.horneo.backend.entity.TipoMovimiento;
+import com.horneo.backend.entity.TipoProducto;
+import com.horneo.backend.entity.Usuario;
 import com.horneo.backend.exception.ReglaNegocioException;
 import com.horneo.backend.repository.MovimientoRepository;
 
@@ -55,6 +58,75 @@ public class MovimientoService {
 			aplicarAProducto(movimiento.getProducto(), movimiento.getCantidad().intValueExact());
 		}
 		return movimientoRepository.save(movimiento);
+	}
+
+	@Transactional
+	public Movimiento registrarEntradaMateriaPrima(Long materiaPrimaId, BigDecimal cantidad, String motivo,
+			Usuario usuario) {
+		MateriaPrima materiaPrima = materiaPrimaService.obtener(materiaPrimaId);
+		return aplicar(Movimiento.deMateriaPrima(TipoMovimiento.ENTRADA, materiaPrima, cantidad, usuario)
+				.conMotivo(motivo));
+	}
+
+	@Transactional
+	public Movimiento registrarEntradaProducto(Long productoId, int cantidad, String motivo, Usuario usuario) {
+		Producto producto = productoService.obtener(productoId);
+		if (producto.getTipo() != TipoProducto.REVENTA) {
+			throw new ReglaNegocioException(producto.getNombre() + " es elaborado: su stock sube con una producción");
+		}
+		return aplicar(Movimiento.deProducto(TipoMovimiento.ENTRADA, producto, cantidad, usuario)
+				.conMotivo(motivo));
+	}
+
+	@Transactional
+	public Movimiento registrarMermaMateriaPrima(Long materiaPrimaId, BigDecimal cantidad, String motivo,
+			Usuario usuario) {
+		String motivoLimpio = exigirMotivo(motivo);
+		MateriaPrima materiaPrima = materiaPrimaService.obtener(materiaPrimaId);
+		return aplicar(Movimiento.deMateriaPrima(TipoMovimiento.MERMA, materiaPrima, cantidad.negate(), usuario)
+				.conMotivo(motivoLimpio));
+	}
+
+	@Transactional
+	public Movimiento registrarMermaProducto(Long productoId, int cantidad, String motivo, Usuario usuario) {
+		String motivoLimpio = exigirMotivo(motivo);
+		Producto producto = productoService.obtener(productoId);
+		return aplicar(Movimiento.deProducto(TipoMovimiento.MERMA, producto, -cantidad, usuario)
+				.conMotivo(motivoLimpio));
+	}
+
+	@Transactional
+	public Movimiento ajustarStockMateriaPrima(Long materiaPrimaId, BigDecimal stockReal, String motivo,
+			Usuario usuario) {
+		String motivoLimpio = exigirMotivo(motivo);
+		MateriaPrima materiaPrima = materiaPrimaService.obtener(materiaPrimaId);
+		entityManager.refresh(materiaPrima, LockModeType.PESSIMISTIC_WRITE);
+		BigDecimal diferencia = stockReal.subtract(materiaPrima.getStockActual());
+		if (diferencia.signum() == 0) {
+			throw new ReglaNegocioException("El stock de " + materiaPrima.getNombre() + " ya es " + stockReal);
+		}
+		return aplicar(Movimiento.deMateriaPrima(TipoMovimiento.AJUSTE, materiaPrima, diferencia, usuario)
+				.conMotivo(motivoLimpio));
+	}
+
+	@Transactional
+	public Movimiento ajustarStockProducto(Long productoId, int stockReal, String motivo, Usuario usuario) {
+		String motivoLimpio = exigirMotivo(motivo);
+		Producto producto = productoService.obtener(productoId);
+		entityManager.refresh(producto, LockModeType.PESSIMISTIC_WRITE);
+		int diferencia = stockReal - producto.getStockActual();
+		if (diferencia == 0) {
+			throw new ReglaNegocioException("El stock de " + producto.getNombre() + " ya es " + stockReal);
+		}
+		return aplicar(Movimiento.deProducto(TipoMovimiento.AJUSTE, producto, diferencia, usuario)
+				.conMotivo(motivoLimpio));
+	}
+
+	private String exigirMotivo(String motivo) {
+		if (motivo == null || motivo.isBlank()) {
+			throw new ReglaNegocioException("Hay que indicar el motivo");
+		}
+		return motivo.trim();
 	}
 
 	private void aplicarAMateriaPrima(MateriaPrima materiaPrima, BigDecimal cantidad) {
