@@ -65,3 +65,52 @@ Sirve como base para redactar la memoria.
 ### Documentación
 - Se crea la carpeta `docs/` con este diario y los diagramas.
 - Diagrama E/R generado a partir del script `V1__crear_tablas.sql` (`docs/diagramas/modelo-er.md`).
+
+### Repositorios (Spring Data JPA)
+- 8 repositorios en el paquete `repository`, uno por entidad. Son interfaces que extienden
+  `JpaRepository`: Spring genera la implementación al arrancar.
+- Consultas derivadas del nombre del método (*query methods*): `findByNombre`,
+  `existsByNombre`, `findByActivoTrueOrderByNombreAsc`, `findByFechaBetween...`, etc.
+- `Optional` en las búsquedas que pueden no encontrar nada, para tratar ese caso de forma explícita.
+- `@EntityGraph` en las consultas que siempre necesitan una relación (receta con sus materias
+  primas, historial con su usuario): se cargan en una sola consulta con `JOIN` y se evita el
+  problema N+1 (una consulta extra por cada fila).
+- Historiales limitados a los 100 registros más recientes (`Top100`). La paginación queda como
+  posible mejora.
+- Orden por fecha y, en caso de empate, por id (`OrderByFechaDescIdDesc`): una producción genera
+  varios movimientos con la misma fecha y así el orden es siempre el mismo.
+- Comprobación: el test de arranque de Spring valida que todos los nombres de método son correctos.
+
+### Servicios
+- Paquete `exception` con dos excepciones propias (heredan de `RuntimeException`):
+  - `RecursoNoEncontradoException` → el recurso pedido no existe (futuro error 404).
+  - `ReglaNegocioException` → la operación no está permitida (nombre repetido, tipo incorrecto...).
+- Inyección de dependencias por constructor, sin `@Autowired` en atributos.
+- `@Transactional(readOnly = true)` en la clase y `@Transactional` solo en los métodos que modifican
+  datos. Si se lanza una `RuntimeException`, se deshacen todos los cambios (*rollback*).
+- *Dirty checking*: al modificar una entidad dentro de una transacción no hace falta llamar a
+  `save()`; Hibernate detecta el cambio y hace el `UPDATE` al terminar.
+- `MateriaPrimaService`: listar, obtener, crear, actualizar y desactivar.
+  - El nombre se limpia con `trim()` y no se puede repetir. Al actualizar se ignora la propia
+    materia prima, porque MySQL compara sin distinguir mayúsculas ("harina" = "Harina").
+  - La unidad no se puede cambiar: dejaría sin sentido el historial y las recetas.
+  - El stock no se edita a mano: empieza en 0 y solo cambia con movimientos.
+  - Borrado lógico (`activo = false`): los movimientos antiguos siguen apuntando a ella.
+- `ProductoService`:
+  - REVENTA necesita precio de compra; ELABORADO no puede tenerlo (su coste sale de la receta).
+    La primera regla también está en MySQL (`CHECK`); la segunda solo en Java.
+  - El tipo de producto no se puede cambiar una vez creado.
+  - Recetas: ver, añadir ingrediente, cambiar cantidad y quitar ingrediente. Solo productos
+    ELABORADO, sin materias primas desactivadas ni repetidas.
+  - Se comprueba que el ingrediente pertenece al producto indicado: no se confía en los ids
+    que llegan desde fuera.
+  - Coste = Σ cantidad × precio unitario, con `BigDecimal` (no `double`, por los errores de
+    redondeo) y redondeo a 2 decimales (`HALF_UP`) solo al final.
+- Validaciones de formato (nombres vacíos, números negativos) pendientes para los controladores
+  (`@NotBlank`, `@PositiveOrZero`). MySQL mantiene los `CHECK` como última barrera.
+
+### Problemas encontrados
+- `git add .` ejecutado desde la carpeta `android/` solo añadía esa carpeta (y un archivo de
+  configuración de Android Studio que no tocaba).
+  → Solución: `git restore --staged` para quitarlo y `git add ../backend/` para añadir los cambios
+  correctos. Revisar siempre con `git status` antes de hacer commit.
