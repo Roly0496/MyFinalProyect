@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import com.horneo.backend.entity.Rol;
 import com.horneo.backend.entity.Usuario;
 
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
@@ -14,4 +15,6 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 	boolean existsByUsername(String username);
 
 	List<Usuario> findAllByOrderByNombreAsc();
+
+	long countByRolAndActivoTrue(Rol rol);
 }
