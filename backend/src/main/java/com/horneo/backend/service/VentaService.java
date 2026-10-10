@@ -60,7 +60,7 @@ public class VentaService {
 	}
 
 	public Venta obtener(Long id) {
-		return ventaRepository.findById(id)
+		return ventaRepository.findConUsuarioById(id)
 				.orElseThrow(() -> new RecursoNoEncontradoException("No existe la venta con id " + id));
 	}
 

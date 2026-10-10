@@ -9,6 +9,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
 public class GestorErrores {
@@ -46,6 +47,12 @@ public class GestorErrores {
 		ProblemDetail problema = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Hay datos no válidos");
 		problema.setProperty("errores", errores);
 		return problema;
+	}
+
+	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
+	public ProblemDetail parametroNoValido(MethodArgumentTypeMismatchException e) {
+		return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+				"El valor '" + e.getValue() + "' no es válido para '" + e.getName() + "'");
 	}
 
 	@ExceptionHandler(DataIntegrityViolationException.class)

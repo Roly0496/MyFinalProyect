@@ -43,7 +43,7 @@ public class ProduccionService {
 	}
 
 	public Produccion obtener(Long id) {
-		return produccionRepository.findById(id)
+		return produccionRepository.findConDetalleById(id)
 				.orElseThrow(() -> new RecursoNoEncontradoException("No existe la producción con id " + id));
 	}
 
