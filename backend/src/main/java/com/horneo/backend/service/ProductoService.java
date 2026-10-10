@@ -127,7 +127,7 @@ public class ProductoService {
 	}
 
 	private Ingrediente obtenerIngrediente(Long productoId, Long ingredienteId) {
-		Ingrediente ingrediente = ingredienteRepository.findById(ingredienteId)
+		Ingrediente ingrediente = ingredienteRepository.findConMateriaPrimaById(ingredienteId)
 				.orElseThrow(() -> new RecursoNoEncontradoException("No existe el ingrediente con id " + ingredienteId));
 		if (!ingrediente.getProducto().getId().equals(productoId)) {
 			throw new RecursoNoEncontradoException(
