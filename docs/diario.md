@@ -211,6 +211,57 @@ Sirve como base para redactar la memoria.
   de una producción fallida. Para ello haría falta una base de datos solo para pruebas
   (posible mejora: Testcontainers con Docker).
 
+### Controladores REST (primer controlador)
+- Paquete `dto` con `record` para los datos que entran y salen de la API. No se devuelven las
+  entidades: se controla qué campos salen (nunca el *hash* de la contraseña), se evitan errores
+  con las relaciones LAZY fuera de la transacción y la API no depende de la base de datos.
+- DTOs de entrada con validación (`@NotBlank`, `@NotNull`, `@Size`, `@PositiveOrZero`) y `@Valid`
+  en el controlador. Tres capas de validación: DTO (formato), servicio (reglas de negocio) y
+  MySQL (`CHECK` y `UNIQUE` como última barrera).
+- Un DTO para crear y otro para actualizar: el de actualizar no tiene `unidad`, porque no se
+  puede cambiar.
+- DTO de salida con un método de fábrica `de(...)` y un campo calculado `bajoMinimo` (stock por
+  debajo del mínimo) para que la app no tenga que calcularlo.
+- `MateriaPrimaController` en `/api/materias-primas` siguiendo el estilo REST: `GET` listar y ver,
+  `POST` crear (201), `PUT` actualizar, `DELETE` desactivar (204, borrado lógico).
+- `GestorErrores` (`@RestControllerAdvice`): convierte las excepciones en respuestas con el
+  formato estándar `ProblemDetail` (RFC 9457). 404 no encontrado, 409 regla de negocio,
+  401 no autenticado, 403 sin permiso, 400 datos no válidos (con el error de cada campo).
+  Los errores de MySQL dan un mensaje genérico para no mostrar detalles internos.
+- Comprobado con peticiones HTTP reales (`curl`) que no guardan datos.
+
+### Autenticación con JWT
+- Se descartan: enviar el id del usuario en una cabecera (cualquiera podría suplantar a otro),
+  sesiones guardadas en el servidor y Spring Security completo (demasiado complejo para el MVP).
+- Se elige JWT con la librería jjwt 0.13.0: estándar en apps móviles y tecnología no vista en el
+  ciclo.
+- Un JWT tiene cabecera, contenido y firma. El contenido (id, rol, fecha de creación y de
+  caducidad) se puede leer pero no modificar: la firma se calcula con una clave secreta que solo
+  conoce el backend. No hace falta guardar sesiones.
+- `TokenService` genera y comprueba los tokens. La clave (`horneo.jwt.secreto`, mínimo 32
+  caracteres) está en `secrets.properties` y no tiene valor por defecto: sin ella la aplicación
+  no arranca. Los tokens duran 12 horas.
+- `POST /api/login` devuelve el token, el id, el nombre y el rol (para que la app muestre u oculte
+  opciones).
+- `AutenticacionInterceptor` (`HandlerInterceptor`) se ejecuta antes de cada petición a `/api/**`
+  salvo el login: lee la cabecera `Authorization: Bearer ...`, comprueba el token, carga el
+  usuario de la base de datos y lo deja en la petición para los controladores.
+  - En cada petición se comprueba que el usuario sigue activo: un usuario desactivado pierde el
+    acceso al momento aunque su token no haya caducado.
+  - El rol se toma de la base de datos, no del token: si se le quita el rol de administrador a
+    alguien, lo nota al instante.
+- Anotación propia `@SoloAdmin` (`@Target(METHOD)`, `@Retention(RUNTIME)`) que se pone en los
+  métodos de los controladores. El interceptor la lee con reflexión (`hasMethodAnnotation`) y
+  responde 403 si el usuario no es administrador.
+  - Diseño "permitido por defecto": lo que no lleva `@SoloAdmin` está abierto a cualquier usuario
+    conectado. Riesgo: olvidar la anotación. Se cubrirá con pruebas que comprueben el 403.
+- 401 = no se sabe quién eres (sin token, token falso o caducado). 403 = se sabe quién eres pero
+  no tienes permiso.
+- Permisos de materias primas: el empleado solo puede consultarlas.
+- Comprobado con 10 casos (sin token, firma falsa, token caducado, usuario inexistente, empleado,
+  administrador...). Para las pruebas se fabricaron tokens firmados con la clave, lo que demuestra
+  que la clave debe mantenerse secreta.
+
 ### Problemas encontrados
 - Las pruebas detectaron un error en `MovimientoService`: dos entradas seguidas de 1000 g y 500 g
   daban un stock de 500 en vez de 1500.
@@ -223,9 +274,18 @@ Sirve como base para redactar la memoria.
     pendientes, sin confirmarlos) antes del `refresh` con bloqueo. Se usa en los 4 sitios donde
     se bloquea una fila.
   - Commits separados: primero la corrección (`fix:`) y después las pruebas (`test:`).
+- El login del administrador fallaba (401) con la contraseña correcta.
+  - Causa: la contraseña tenía un carácter especial (ñ, tilde...). El archivo se guarda en UTF-8,
+    pero Spring Boot lee los `.properties` en ISO-8859-1, así que el carácter se leyó mal
+    (por ejemplo, `ñ` → `Ã±`) y se guardó el *hash* de esa versión estropeada.
+  - Solución: escribir ese carácter con su código Unicode (`ñ` = `\u00f1`) en
+    `secrets.properties`, borrar el administrador (no tenía movimientos) y dejar que
+    `AdminInicial` lo vuelva a crear. Se añade un aviso en `secrets.properties.example`.
 
 ### Pendiente
-- Controladores REST con DTOs, validación de datos de entrada (`@NotBlank`, `@Positive`...) y
-  gestión centralizada de errores (`@RestControllerAdvice`: 404, 409, 401).
+- Resto de controladores: productos y recetas, movimientos, producción, ventas y usuarios.
+  Permisos acordados para productos: el empleado puede ver productos y recetas, pero no editarlos
+  ni ver el coste.
+- Prueba que compruebe que un empleado recibe 403 en las operaciones de administrador.
 - Posible mejora: base de datos de pruebas con Testcontainers (Docker) para probar el *rollback*
   real.
