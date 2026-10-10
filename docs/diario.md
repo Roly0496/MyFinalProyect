@@ -135,3 +135,53 @@ Sirve como base para redactar la memoria.
   configuración de Android Studio que no tocaba).
   → Solución: `git restore --staged` para quitarlo y `git add ../backend/` para añadir los cambios
   correctos. Revisar siempre con `git status` antes de hacer commit.
+
+---
+
+## 10/10/2026
+
+### Servicios
+- `ProduccionService`: registrar una producción y consultar las producciones (las 100 últimas o
+  las de un día concreto).
+  - Comprobaciones previas: cantidad mayor que 0, producto activo, de tipo ELABORADO y con receta.
+    La cantidad se comprueba en el propio servicio: con una cantidad negativa las materias primas
+    subirían y el producto bajaría, y la regla del signo no lo detectaría.
+  - Se guarda primero la producción, porque cada movimiento debe apuntar a ella.
+  - La receta es para 1 unidad: por cada ingrediente se resta cantidad × unidades producidas.
+    Después se suma el producto.
+  - Los ingredientes se ordenan por el id de su materia prima antes de bloquearlos, y el producto
+    se bloquea el último. Así dos producciones nunca se bloquean en orden cruzado (*deadlock*).
+  - Todo en una sola transacción: si falta stock de cualquier ingrediente, se deshace la
+    producción entera. Tras un *rollback* el `AUTO_INCREMENT` no retrocede (quedan huecos en la
+    numeración, es normal).
+- `VentaService`: registrar una venta con varias líneas, consultar ventas, ver las líneas de una
+  venta y calcular la caja del día.
+  - Cada línea se recibe como un `record` (`Linea(productoId, cantidad)`): una clase inmutable
+    solo para llevar datos. No se usan `record` en las entidades porque JPA necesita modificarlas.
+  - Se valida que haya al menos una línea, que todas indiquen producto, que las cantidades sean
+    mayores que 0 y que no se repita un producto (se detecta con un `Set`).
+  - Las líneas se ordenan por id de producto antes de bloquear (mismo motivo que en producción).
+  - El total se calcula antes de crear la venta, porque la entidad `Venta` no se puede modificar.
+  - Cada línea guarda una copia del precio de venta: si el precio cambia después, los tickets
+    antiguos conservan el precio al que se vendió.
+  - Si falta stock de un producto, se deshace la venta completa (no se vende "medio ticket").
+- `UsuarioService`: listar, crear, actualizar, cambiar contraseña, activar, desactivar y login.
+  - Contraseñas con BCrypt mediante la librería `spring-security-crypto`. Se descarta Spring
+    Security completo por ahora: es más complejo y el MVP solo necesita un login sencillo.
+    Pasar a Spring Security con JWT queda como posible mejora.
+  - BCrypt es un *hash* irreversible, con sal (la misma contraseña da resultados distintos) y
+    lento a propósito para dificultar los ataques de fuerza bruta. En el login no se descifra
+    nada: se vuelve a calcular el *hash* y se compara (`matches`).
+  - Clase `SeguridadConfig` con `@Configuration` y `@Bean` para que Spring gestione el
+    `PasswordEncoder` (una clase de librería a la que no se le pueden poner anotaciones).
+  - Nueva excepción `CredencialesIncorrectasException` (futuro error 401). Usuario inexistente,
+    desactivado o contraseña incorrecta dan el mismo mensaje, para no revelar qué usuarios existen.
+  - Contraseña de al menos 8 caracteres. El nombre de usuario no se puede cambiar.
+  - Siempre debe quedar al menos un administrador activo: no se puede desactivar ni pasar a
+    EMPLEADO al último.
+
+### Pendiente
+- Decidir cómo se crea el primer administrador (la tabla `usuario` está vacía): migración
+  Flyway `V2` o código que se ejecute al arrancar.
+- Test de integración que registre una producción y una venta reales y compruebe los stocks.
+- Controladores REST con validación de datos de entrada y gestión centralizada de errores.
