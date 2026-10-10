@@ -28,6 +28,11 @@ public class GestorErrores {
 		return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, e.getMessage());
 	}
 
+	@ExceptionHandler(NoAutenticadoException.class)
+	public ProblemDetail noAutenticado(NoAutenticadoException e) {
+		return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, e.getMessage());
+	}
+
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ProblemDetail datosNoValidos(MethodArgumentNotValidException e) {
 		Map<String, String> errores = new LinkedHashMap<>();
