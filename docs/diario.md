@@ -180,8 +180,52 @@ Sirve como base para redactar la memoria.
   - Siempre debe quedar al menos un administrador activo: no se puede desactivar ni pasar a
     EMPLEADO al último.
 
+### Administrador inicial
+- Problema: para crear usuarios hay que ser administrador, pero al principio la tabla `usuario`
+  está vacía.
+- Se descarta una migración Flyway `V2` con el administrador: su contraseña inicial quedaría en
+  el repositorio.
+- Se elige una clase `AdminInicial` que implementa `ApplicationRunner` (se ejecuta una vez al
+  arrancar). Si no hay ningún administrador activo, crea uno con el usuario y la contraseña de
+  `horneo.admin.username` y `horneo.admin.password`, que están en `secrets.properties` (fuera de
+  Git, como la contraseña de MySQL).
+  - Si ya hay administrador, no hace nada. Si falta la contraseña, muestra un aviso en el log y la
+    aplicación sigue arrancando.
+  - Reutiliza `UsuarioService.crear`, así se aplican las mismas reglas (longitud mínima, BCrypt).
+  - Las propiedades se leen con `@Value`. Los mensajes se escriben con un *logger* (SLF4J) en vez
+    de `System.out.println`.
+- Comprobación: el primer arranque crea el usuario `admin`; el segundo no crea ninguno más.
+
+### Pruebas de integración
+- Clase `CicloPrincipalTest` con 8 pruebas que usan los servicios reales contra MySQL:
+  entradas, producción, producción sin stock, coste de la receta, venta con varias líneas, venta
+  sin stock, ajuste por recuento y login.
+- `@SpringBootTest` arranca la aplicación completa. `@Transactional` en la clase de prueba deshace
+  todos los cambios al terminar cada prueba: la base de datos queda como estaba (comprobado con
+  una consulta: 0 registros de prueba). Los nombres de prueba empiezan por `TEST`.
+- `@BeforeEach` prepara el mismo escenario antes de cada prueba (empleado, harina, mantequilla y
+  croissant con receta), para que las pruebas no dependan unas de otras.
+- Comprobaciones con AssertJ (`assertThat`, `assertThatThrownBy`). Los `BigDecimal` se comparan
+  con `isEqualByComparingTo`, porque `equals` considera distintos `7.6` y `7.60`.
+- Limitación: al ir cada prueba en una sola transacción, no se puede comprobar el *rollback* real
+  de una producción fallida. Para ello haría falta una base de datos solo para pruebas
+  (posible mejora: Testcontainers con Docker).
+
+### Problemas encontrados
+- Las pruebas detectaron un error en `MovimientoService`: dos entradas seguidas de 1000 g y 500 g
+  daban un stock de 500 en vez de 1500.
+  - Causa: con el *dirty checking*, el primer cambio de stock solo estaba en memoria. El
+    `refresh` del bloqueo pesimista volvía a leer la fila de MySQL (todavía con el valor antiguo)
+    y descartaba ese cambio.
+  - En la aplicación real no llegaba a ocurrir (cada operación es su propia transacción y no se
+    repiten filas), pero era un error escondido que podía aparecer con cualquier cambio futuro.
+  - Solución: método `bloquearYReleer`, que hace `flush()` (escribe en MySQL los cambios
+    pendientes, sin confirmarlos) antes del `refresh` con bloqueo. Se usa en los 4 sitios donde
+    se bloquea una fila.
+  - Commits separados: primero la corrección (`fix:`) y después las pruebas (`test:`).
+
 ### Pendiente
-- Decidir cómo se crea el primer administrador (la tabla `usuario` está vacía): migración
-  Flyway `V2` o código que se ejecute al arrancar.
-- Test de integración que registre una producción y una venta reales y compruebe los stocks.
-- Controladores REST con validación de datos de entrada y gestión centralizada de errores.
+- Controladores REST con DTOs, validación de datos de entrada (`@NotBlank`, `@Positive`...) y
+  gestión centralizada de errores (`@RestControllerAdvice`: 404, 409, 401).
+- Posible mejora: base de datos de pruebas con Testcontainers (Docker) para probar el *rollback*
+  real.
