@@ -106,6 +106,27 @@ Sirve como base para redactar la memoria.
     que llegan desde fuera.
   - Coste = Σ cantidad × precio unitario, con `BigDecimal` (no `double`, por los errores de
     redondeo) y redondeo a 2 decimales (`HALF_UP`) solo al final.
+- `MovimientoService`: único punto donde cambia el stock.
+  - Método `aplicar(Movimiento)`: valida el signo según el tipo, comprueba que el stock no queda
+    negativo, cambia el stock y guarda el movimiento. Producción, ventas, entradas, mermas y
+    ajustes pasan siempre por él, así ninguna operación puede saltarse estas reglas.
+  - Signo según el tipo (igual que el `CHECK` de MySQL): ENTRADA siempre suma, VENTA y MERMA
+    siempre restan, PRODUCCION y AJUSTE pueden sumar o restar pero nunca valer 0.
+  - Bloqueo pesimista: antes de cambiar el stock se relee la fila con
+    `entityManager.refresh(..., PESSIMISTIC_WRITE)` (`SELECT ... FOR UPDATE`). Evita que dos
+    operaciones simultáneas (por ejemplo, dos ventas del último croissant) dejen el stock mal
+    (*lost update*). Se descarta poner `@Lock` en el repositorio: si la entidad ya estaba cargada
+    en memoria, Hibernate no vuelve a leer el stock. Se prefiere al bloqueo optimista (`@Version`)
+    porque es mejor esperar unos milisegundos que obligar a repetir la venta.
+  - Entradas: de materias primas o de productos de REVENTA (los ELABORADO suben con producción).
+  - Mermas: el usuario indica la cantidad en positivo y el servicio le cambia el signo. Motivo
+    obligatorio.
+  - Ajustes tras un recuento: el usuario indica el stock real y el servicio calcula la diferencia
+    (se guarda la diferencia, no el valor final). La diferencia se calcula después de bloquear la
+    fila. Motivo obligatorio.
+  - Por ahora los métodos reciben el `Usuario`; cuando exista el login lo obtendrá el controlador.
+  - Pendiente: en producción y en ventas, bloquear las filas siempre en el mismo orden (por id)
+    para evitar interbloqueos (*deadlocks*).
 - Validaciones de formato (nombres vacíos, números negativos) pendientes para los controladores
   (`@NotBlank`, `@PositiveOrZero`). MySQL mantiene los `CHECK` como última barrera.
 
