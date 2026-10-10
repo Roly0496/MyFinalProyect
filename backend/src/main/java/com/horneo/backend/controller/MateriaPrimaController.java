@@ -19,16 +19,20 @@ import com.horneo.backend.config.SoloAdmin;
 import com.horneo.backend.dto.ActualizarMateriaPrimaPeticion;
 import com.horneo.backend.dto.CrearMateriaPrimaPeticion;
 import com.horneo.backend.dto.MateriaPrimaRespuesta;
+import com.horneo.backend.dto.MovimientoRespuesta;
 import com.horneo.backend.service.MateriaPrimaService;
+import com.horneo.backend.service.MovimientoService;
 
 @RestController
 @RequestMapping("/api/materias-primas")
 public class MateriaPrimaController {
 
 	private final MateriaPrimaService materiaPrimaService;
+	private final MovimientoService movimientoService;
 
-	public MateriaPrimaController(MateriaPrimaService materiaPrimaService) {
+	public MateriaPrimaController(MateriaPrimaService materiaPrimaService, MovimientoService movimientoService) {
 		this.materiaPrimaService = materiaPrimaService;
+		this.movimientoService = movimientoService;
 	}
 
 	@GetMapping
@@ -64,5 +68,12 @@ public class MateriaPrimaController {
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void desactivar(@PathVariable Long id) {
 		materiaPrimaService.desactivar(id);
+	}
+
+	@GetMapping("/{id}/movimientos")
+	public List<MovimientoRespuesta> historial(@PathVariable Long id) {
+		return movimientoService.historialMateriaPrima(id).stream()
+				.map(MovimientoRespuesta::de)
+				.toList();
 	}
 }

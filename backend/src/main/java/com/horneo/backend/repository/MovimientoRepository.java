@@ -9,10 +9,10 @@ import com.horneo.backend.entity.Movimiento;
 
 public interface MovimientoRepository extends JpaRepository<Movimiento, Long> {
 
-	@EntityGraph(attributePaths = "usuario")
+	@EntityGraph(attributePaths = { "materiaPrima", "usuario" })
 	List<Movimiento> findByMateriaPrimaIdOrderByFechaDescIdDesc(Long materiaPrimaId);
 
-	@EntityGraph(attributePaths = "usuario")
+	@EntityGraph(attributePaths = { "producto", "usuario" })
 	List<Movimiento> findByProductoIdOrderByFechaDescIdDesc(Long productoId);
 
 	@EntityGraph(attributePaths = { "materiaPrima", "producto", "usuario" })

@@ -23,9 +23,11 @@ import com.horneo.backend.dto.CambiarCantidadPeticion;
 import com.horneo.backend.dto.CosteRespuesta;
 import com.horneo.backend.dto.CrearProductoPeticion;
 import com.horneo.backend.dto.IngredienteRespuesta;
+import com.horneo.backend.dto.MovimientoRespuesta;
 import com.horneo.backend.dto.ProductoRespuesta;
 import com.horneo.backend.entity.Producto;
 import com.horneo.backend.entity.TipoProducto;
+import com.horneo.backend.service.MovimientoService;
 import com.horneo.backend.service.ProductoService;
 
 @RestController
@@ -33,9 +35,11 @@ import com.horneo.backend.service.ProductoService;
 public class ProductoController {
 
 	private final ProductoService productoService;
+	private final MovimientoService movimientoService;
 
-	public ProductoController(ProductoService productoService) {
+	public ProductoController(ProductoService productoService, MovimientoService movimientoService) {
 		this.productoService = productoService;
+		this.movimientoService = movimientoService;
 	}
 
 	@GetMapping
@@ -110,5 +114,12 @@ public class ProductoController {
 	@SoloAdmin
 	public CosteRespuesta calcularCoste(@PathVariable Long id) {
 		return new CosteRespuesta(id, productoService.calcularCoste(id));
+	}
+
+	@GetMapping("/{id}/movimientos")
+	public List<MovimientoRespuesta> historial(@PathVariable Long id) {
+		return movimientoService.historialProducto(id).stream()
+				.map(MovimientoRespuesta::de)
+				.toList();
 	}
 }
