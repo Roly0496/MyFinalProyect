@@ -100,7 +100,7 @@ public class MovimientoService {
 			Usuario usuario) {
 		String motivoLimpio = exigirMotivo(motivo);
 		MateriaPrima materiaPrima = materiaPrimaService.obtener(materiaPrimaId);
-		entityManager.refresh(materiaPrima, LockModeType.PESSIMISTIC_WRITE);
+		bloquearYReleer(materiaPrima);
 		BigDecimal diferencia = stockReal.subtract(materiaPrima.getStockActual());
 		if (diferencia.signum() == 0) {
 			throw new ReglaNegocioException("El stock de " + materiaPrima.getNombre() + " ya es " + stockReal);
@@ -113,13 +113,18 @@ public class MovimientoService {
 	public Movimiento ajustarStockProducto(Long productoId, int stockReal, String motivo, Usuario usuario) {
 		String motivoLimpio = exigirMotivo(motivo);
 		Producto producto = productoService.obtener(productoId);
-		entityManager.refresh(producto, LockModeType.PESSIMISTIC_WRITE);
+		bloquearYReleer(producto);
 		int diferencia = stockReal - producto.getStockActual();
 		if (diferencia == 0) {
 			throw new ReglaNegocioException("El stock de " + producto.getNombre() + " ya es " + stockReal);
 		}
 		return aplicar(Movimiento.deProducto(TipoMovimiento.AJUSTE, producto, diferencia, usuario)
 				.conMotivo(motivoLimpio));
+	}
+
+	private void bloquearYReleer(Object entidad) {
+		entityManager.flush();
+		entityManager.refresh(entidad, LockModeType.PESSIMISTIC_WRITE);
 	}
 
 	private String exigirMotivo(String motivo) {
@@ -130,7 +135,7 @@ public class MovimientoService {
 	}
 
 	private void aplicarAMateriaPrima(MateriaPrima materiaPrima, BigDecimal cantidad) {
-		entityManager.refresh(materiaPrima, LockModeType.PESSIMISTIC_WRITE);
+		bloquearYReleer(materiaPrima);
 		BigDecimal stockNuevo = materiaPrima.getStockActual().add(cantidad);
 		if (stockNuevo.signum() < 0) {
 			throw new ReglaNegocioException("No hay stock suficiente de " + materiaPrima.getNombre()
@@ -140,7 +145,7 @@ public class MovimientoService {
 	}
 
 	private void aplicarAProducto(Producto producto, int cantidad) {
-		entityManager.refresh(producto, LockModeType.PESSIMISTIC_WRITE);
+		bloquearYReleer(producto);
 		int stockNuevo = producto.getStockActual() + cantidad;
 		if (stockNuevo < 0) {
 			throw new ReglaNegocioException("No hay stock suficiente de " + producto.getNombre()
