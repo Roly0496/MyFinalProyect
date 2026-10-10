@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.horneo.backend.config.SoloAdmin;
 import com.horneo.backend.dto.ActualizarMateriaPrimaPeticion;
 import com.horneo.backend.dto.CrearMateriaPrimaPeticion;
 import com.horneo.backend.dto.MateriaPrimaRespuesta;
@@ -43,6 +44,7 @@ public class MateriaPrimaController {
 	}
 
 	@PostMapping
+	@SoloAdmin
 	@ResponseStatus(HttpStatus.CREATED)
 	public MateriaPrimaRespuesta crear(@Valid @RequestBody CrearMateriaPrimaPeticion peticion) {
 		return MateriaPrimaRespuesta.de(materiaPrimaService.crear(peticion.nombre(), peticion.unidad(),
@@ -50,6 +52,7 @@ public class MateriaPrimaController {
 	}
 
 	@PutMapping("/{id}")
+	@SoloAdmin
 	public MateriaPrimaRespuesta actualizar(@PathVariable Long id,
 			@Valid @RequestBody ActualizarMateriaPrimaPeticion peticion) {
 		return MateriaPrimaRespuesta.de(materiaPrimaService.actualizar(id, peticion.nombre(),
@@ -57,6 +60,7 @@ public class MateriaPrimaController {
 	}
 
 	@DeleteMapping("/{id}")
+	@SoloAdmin
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void desactivar(@PathVariable Long id) {
 		materiaPrimaService.desactivar(id);

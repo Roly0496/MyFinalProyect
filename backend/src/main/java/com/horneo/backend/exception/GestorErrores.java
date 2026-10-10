@@ -33,6 +33,11 @@ public class GestorErrores {
 		return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, e.getMessage());
 	}
 
+	@ExceptionHandler(AccesoDenegadoException.class)
+	public ProblemDetail accesoDenegado(AccesoDenegadoException e) {
+		return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, e.getMessage());
+	}
+
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ProblemDetail datosNoValidos(MethodArgumentNotValidException e) {
 		Map<String, String> errores = new LinkedHashMap<>();
