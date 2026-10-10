@@ -2,3 +2,7 @@
 .DS_Store
 
 # Configuración local de herramientas
+
+# Archivos de Android Studio al abrir la carpeta raíz (no es un proyecto)
+/.idea/
+/.gradle/
