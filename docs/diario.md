@@ -282,10 +282,91 @@ Sirve como base para redactar la memoria.
     `secrets.properties`, borrar el administrador (no tenía movimientos) y dejar que
     `AdminInicial` lo vuelva a crear. Se añade un aviso en `secrets.properties.example`.
 
+### Resto de controladores (productos, movimientos, producción y ventas)
+- Permisos acordados con el criterio de "el empleado hace el trabajo diario, el administrador
+  gestiona y ve la información del negocio":
+
+  | Operación | ADMIN | EMPLEADO |
+  |---|---|---|
+  | Ver materias primas, productos, recetas e historiales | Sí | Sí |
+  | Crear, editar o desactivar materias primas y productos; editar recetas | Sí | No |
+  | Ver el coste de un producto | Sí | No |
+  | Registrar entradas y mermas | Sí | Sí |
+  | Ajustar el stock tras un recuento | Sí | No |
+  | Producir, vender, ver producciones y tickets | Sí | Sí |
+  | Caja del día | Sí | No |
+
+  - El empleado puede registrar entradas y mermas porque cada movimiento guarda quién lo hizo y
+    no se puede borrar. Los ajustes quedan para el administrador: mal usados podrían ocultar
+    pérdidas.
+- `ProductoController`: filtro opcional por tipo (`?tipo=ELABORADO`, `@RequestParam`), rutas
+  anidadas para la receta (`/api/productos/{id}/receta/{ingredienteId}`) y el coste en una ruta
+  aparte (`/api/productos/{id}/coste`) para poder protegerlo con `@SoloAdmin`.
+- `MovimientoController`: primer controlador que recibe el usuario del token
+  (`@RequestAttribute`). El usuario nunca se envía en el cuerpo de la petición, así nadie puede
+  registrar movimientos en nombre de otro. Historiales en `/api/materias-primas/{id}/movimientos`
+  y `/api/productos/{id}/movimientos`.
+- `ProduccionController` y `VentaController`: filtro por día (`?fecha=2026-10-10`, formato
+  ISO 8601 con `@DateTimeFormat`). La venta recibe una lista de líneas validada elemento a
+  elemento (`List<@Valid LineaVentaPeticion>`) y devuelve el ticket completo (cabecera, líneas y
+  subtotales). La caja del día devuelve el número de ventas y el total.
+- Los DTOs de la API se convierten a los tipos del servicio (`VentaService.Linea`): el servicio no
+  depende de cómo llegan los datos por HTTP.
+- `GestorErrores` también responde 400 con mensaje cuando un parámetro de la URL no es válido
+  (una fecha mal escrita, un tipo de producto que no existe).
+- Problema evitado varias veces: los DTOs leen datos de relaciones LAZY (nombre de la materia
+  prima, del producto, del usuario) después de cerrarse la transacción
+  (`open-in-view=false`). Se añadieron búsquedas con `@EntityGraph`
+  (`findConMateriaPrimaById`, `findConDetalleById`, `findConUsuarioById`) para traer esos datos
+  en la misma consulta.
+- Pruebas con la aplicación arrancada y peticiones HTTP reales (13 a 16 casos por controlador),
+  usando datos temporales que se borran al terminar.
+  - Se comprobó el *rollback* real: una venta de 1 croissant y 4 zumos (solo quedaban 3) falló
+    por el zumo, y el stock del croissant, que ya se había restado, volvió a su valor. No se vende
+    "medio ticket". Esto cubre la limitación de las pruebas de integración.
+
+### Repositorio
+- `git add ../` desde la carpeta `android/` añadió archivos de configuración de Android Studio
+  (entre ellos `workspace.xml`, que es personal). Se quitaron con `git restore --staged` y se
+  añadieron al `.gitignore`: `/.idea/` y `/.gradle/` en la raíz y `/.idea/inspectionProfiles` en
+  `android/`. La `/` inicial hace que la regla solo afecte a esa carpeta, para no ignorar los
+  archivos de `android/.idea/` que sí se suben.
+
+---
+
+## 11/10/2026
+
+### API de usuarios
+- `UsuarioController`: todas las operaciones son solo para el administrador (listar, crear,
+  cambiar nombre o rol, poner contraseña nueva, desactivar y reactivar), salvo dos que puede usar
+  cualquier usuario:
+  - `GET /api/usuarios/yo`: ver mis datos.
+  - `PUT /api/usuarios/yo/password`: cambiar mi contraseña. Exige la contraseña actual, para que
+    nadie pueda cambiarla si se deja la sesión abierta.
+- Las rutas `/yo` no llevan id: el usuario sale del token. Cuando una ruta fija (`/yo`) y una con
+  variable (`/{id}`) coinciden, Spring elige la fija.
+- Si la contraseña actual es incorrecta se responde 409 y no 401: la app interpretará el 401 como
+  sesión caducada y cerraría la sesión por un simple error al escribir.
+- Contraseñas entre 8 y 72 caracteres: BCrypt solo usa los primeros 72 bytes.
+- La respuesta nunca incluye el *hash* de la contraseña.
+
+### Pruebas de los controladores (MockMvc)
+- `UsuarioControllerTest` con MockMvc: simula peticiones HTTP sin arrancar un servidor, pasando
+  por el interceptor, la validación, el controlador y el gestor de errores. Los tokens se generan
+  con `TokenService`.
+- Comprueba que un empleado recibe 403 en las 7 operaciones de administración de usuarios
+  (incluidos intentos de ascenderse a administrador o cambiar la contraseña de otro), que sin
+  token se recibe 401, que `/yo` no devuelve el *hash* y que cambiar la contraseña exige la actual.
+- Para comprobar que la prueba sirve, se quitó a propósito un `@SoloAdmin`: la prueba falló
+  ("expected 403 but was 201"). Después se volvió a poner. Así se cubre el riesgo del diseño
+  "permitido por defecto".
+- Total: 14 pruebas automáticas, todas correctas.
+
+### Estado
+- Backend terminado: 6 controladores, login con JWT, permisos por rol, gestión de errores y
+  14 pruebas.
+
 ### Pendiente
-- Resto de controladores: productos y recetas, movimientos, producción, ventas y usuarios.
-  Permisos acordados para productos: el empleado puede ver productos y recetas, pero no editarlos
-  ni ver el coste.
-- Prueba que compruebe que un empleado recibe 403 en las operaciones de administrador.
-- Posible mejora: base de datos de pruebas con Testcontainers (Docker) para probar el *rollback*
-  real.
+- Planificar y empezar la app Android: arquitectura, conexión con la API, guardar el token,
+  pantallas.
+- Posible mejora: base de datos de pruebas con Testcontainers (Docker).
