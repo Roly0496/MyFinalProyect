@@ -1,4 +1,4 @@
-package com.example.myfinalproyect
+package com.horneo.app
 
 import org.junit.Test
 

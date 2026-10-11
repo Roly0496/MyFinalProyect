@@ -1,4 +1,4 @@
-package com.example.myfinalproyect.ui.theme
+package com.horneo.app.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

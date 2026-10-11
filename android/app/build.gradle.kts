@@ -4,13 +4,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.myfinalproyect"
+    namespace = "com.horneo.app"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.example.myfinalproyect"
+        applicationId = "com.horneo.app"
         minSdk = 24
         targetSdk = 37
         versionCode = 1
