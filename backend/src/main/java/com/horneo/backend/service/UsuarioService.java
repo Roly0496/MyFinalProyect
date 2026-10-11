@@ -75,6 +75,16 @@ public class UsuarioService {
 	}
 
 	@Transactional
+	public void cambiarPasswordPropia(Long id, String passwordActual, String nuevaPassword) {
+		Usuario usuario = obtener(id);
+		if (!passwordEncoder.matches(passwordActual, usuario.getPasswordHash())) {
+			throw new ReglaNegocioException("La contraseña actual no es correcta");
+		}
+		validarPassword(nuevaPassword);
+		usuario.setPasswordHash(passwordEncoder.encode(nuevaPassword));
+	}
+
+	@Transactional
 	public void desactivar(Long id) {
 		Usuario usuario = obtener(id);
 		comprobarQueNoEsUltimoAdmin(usuario);
