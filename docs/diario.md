@@ -362,11 +362,99 @@ Sirve como base para redactar la memoria.
   "permitido por defecto".
 - Total: 14 pruebas automáticas, todas correctas.
 
+### App Android: decisiones
+- Paquete `com.horneo.app` (el de la plantilla era genérico).
+- Arquitectura MVVM: pantallas en Jetpack Compose, un `ViewModel` por pantalla que guarda el
+  estado, y repositorios que hablan con la API. Las pantallas no saben nada de HTTP.
+- Conexión con la API: Retrofit + OkHttp, y kotlinx.serialization para convertir el JSON.
+- Inyección de dependencias manual con una clase `AppContainer` (sin Hilt): para una app de este
+  tamaño es suficiente y se entiende mejor qué objeto se crea y dónde.
+- El token JWT se guarda con DataStore, para que la sesión siga abierta al cerrar la app.
+- Navegación con Navigation Compose.
+- Solo funciona con conexión (sin base de datos local). Trabajar sin conexión con Room queda como
+  línea futura.
+- Durante el desarrollo el backend está en el propio ordenador. Desde el emulador se llega a él con
+  la dirección `10.0.2.2:8080`.
+- Antes de hacer más pantallas hay que hacer una maqueta de diseño (colores, fuente, logo,
+  accesibilidad), como pide la rúbrica.
+
+### App Android: primeros pasos
+- Paso 1: cambio del paquete de la plantilla a `com.horneo.app`.
+- Paso 2: dependencias en el catálogo de versiones (`libs.versions.toml`): Retrofit, OkHttp,
+  kotlinx.serialization, DataStore, Navigation Compose y Lifecycle. También:
+  - Permiso `INTERNET`.
+  - `network_security_config.xml`: Android solo permite HTTPS por defecto. Se permite HTTP
+    únicamente hacia `10.0.2.2`, no hacia cualquier dirección.
+- Paso 3: capa de datos del login.
+  - `data/remote`: DTOs del login, interfaz `HorneoApi` (Retrofit), `ErroresApi` (saca el mensaje
+    del `ProblemDetail` que devuelve el backend para mostrarlo al usuario) y un interceptor que
+    añade la cabecera `Authorization: Bearer <token>` a cada petición.
+  - `data/local/SesionStore`: guarda en DataStore el token, el id, el nombre y el rol.
+  - `data/repository/AuthRepository`: login y cierre de sesión. Devuelve `Result`, así quien lo
+    usa tiene que tratar el caso de error.
+  - `AppContainer` y `HorneoApplication`: crean estos objetos una sola vez para toda la app.
+- Se probó con una prueba temporal contra el backend arrancado: login correcto, contraseña
+  incorrecta (401 con su mensaje), error de validación y servidor apagado. Todos muestran un
+  mensaje claro.
+- Los modelos (DTOs) existen en los dos lados (Java y Kotlin) porque lo que se comparte es el
+  contrato JSON, no el código. Así cada parte puede cambiar por dentro sin romper la otra. Línea
+  futura: generar los modelos automáticamente con OpenAPI.
+
 ### Estado
 - Backend terminado: 6 controladores, login con JWT, permisos por rol, gestión de errores y
   14 pruebas.
+- App Android: arquitectura decidida y capa de datos del login hecha.
 
 ### Pendiente
-- Planificar y empezar la app Android: arquitectura, conexión con la API, guardar el token,
-  pantallas.
+- Pantallas de login e inicio.
 - Posible mejora: base de datos de pruebas con Testcontainers (Docker).
+
+---
+
+## 14/10/2026
+
+### Pantallas de login e inicio
+- `LoginViewModel`: guarda el estado de la pantalla en un `StateFlow<LoginUiState>` (usuario,
+  contraseña, cargando, error). El botón solo se activa si los dos campos tienen texto y no hay
+  una petición en curso. El error se borra en cuanto el usuario vuelve a escribir.
+- `LoginScreen`: solo dibuja el estado y avisa al `ViewModel` de lo que hace el usuario.
+- Los `ViewModel` se crean con una `Factory` que toma el repositorio del `AppContainer`.
+- `MainActivity` decide qué pantalla mostrar según la sesión guardada en DataStore:
+  - Cargando (todavía se está leyendo): indicador de progreso.
+  - Sin sesión: pantalla de login.
+  - Con sesión: pantalla de inicio.
+
+  Al hacer login no se navega a mano: se guarda la sesión, DataStore avisa del cambio y la pantalla
+  cambia sola. Al cerrar sesión pasa lo mismo al revés.
+- `InicioScreen` (provisional): saluda al usuario, tiene un botón para comprobar la conexión
+  (`GET /api/usuarios/yo`, que confirma que el servidor acepta el token) y otro para cerrar sesión.
+
+### Problemas encontrados
+- En el emulador con Android 17 (API 37) todas las peticiones al backend fallaban por tiempo de
+  espera agotado (`SocketTimeoutException`), aunque el backend estaba funcionando y respondía con
+  `curl`. Causa: desde Android 17 las apps necesitan el permiso `ACCESS_LOCAL_NETWORK` (grupo
+  "Dispositivos cercanos") para conectarse a la red local, y `10.0.2.2` cuenta como red local.
+  - Solución: el permiso se declara solo en `app/src/debug/AndroidManifest.xml`, que solo se usa en
+    la versión de desarrollo. La versión final usará un servidor en Internet y no lo necesita. Se
+    comprobó en los manifests generados: la versión de desarrollo lo tiene y la final no.
+  - Se concede una vez en el emulador o el móvil: Ajustes > Aplicaciones > Horneo > Permisos >
+    Dispositivos cercanos (o con `adb shell pm grant`).
+
+### Pruebas
+- Probado en el emulador con un usuario temporal (borrado después):
+  - Contraseña incorrecta: aparece el mensaje de error.
+  - Login correcto: la petición lleva la cabecera `Bearer` (comprobado en el registro de OkHttp).
+  - La sesión sigue abierta después de forzar el cierre de la app.
+  - Cerrar sesión vuelve al login.
+
+### Demo de la defensa
+- La demo se hará en local: backend, MySQL y emulador en el portátil (o un móvil real por USB con
+  `adb reverse`). Como plan B, un vídeo explicado de 2-3 minutos. No hace falta pagar un servidor
+  (pendiente de confirmar con el tutor).
+- En la memoria se compararán las opciones de despliegue. Está previsto Docker Compose como
+  tecnología nueva.
+
+### Pendiente
+- Maqueta de diseño (colores, fuente, logo, accesibilidad) antes de seguir con las pantallas.
+- Resto de pantallas: materias primas, productos y recetas, movimientos, producción, ventas,
+  usuarios.
