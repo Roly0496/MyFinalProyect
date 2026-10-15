@@ -10,3 +10,6 @@ data class LoginPeticion(val username: String, val password: String)
 
 @Serializable
 data class LoginRespuesta(val token: String, val id: Long, val nombre: String, val rol: Rol)
+
+@Serializable
+data class UsuarioRespuesta(val id: Long, val nombre: String, val username: String, val rol: Rol, val activo: Boolean)

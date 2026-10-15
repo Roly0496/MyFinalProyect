@@ -4,6 +4,7 @@ import com.horneo.app.data.local.Sesion
 import com.horneo.app.data.local.SesionStore
 import com.horneo.app.data.remote.HorneoApi
 import com.horneo.app.data.remote.LoginPeticion
+import com.horneo.app.data.remote.UsuarioRespuesta
 import kotlinx.coroutines.flow.Flow
 
 class AuthRepository(private val api: HorneoApi, private val sesionStore: SesionStore) {
@@ -16,6 +17,8 @@ class AuthRepository(private val api: HorneoApi, private val sesionStore: Sesion
         sesionStore.guardar(sesion)
         sesion
     }
+
+    suspend fun comprobarSesion(): Result<UsuarioRespuesta> = runCatching { api.yo() }
 
     suspend fun logout() {
         sesionStore.borrar()

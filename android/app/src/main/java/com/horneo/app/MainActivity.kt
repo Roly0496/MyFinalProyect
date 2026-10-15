@@ -4,44 +4,59 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.horneo.app.data.local.Sesion
+import com.horneo.app.ui.inicio.InicioScreen
+import com.horneo.app.ui.login.LoginScreen
 import com.horneo.app.ui.theme.HorneoTheme
+import kotlinx.coroutines.flow.map
+
+private sealed interface EstadoSesion {
+    data object Cargando : EstadoSesion
+    data object SinSesion : EstadoSesion
+    data class ConSesion(val sesion: Sesion) : EstadoSesion
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val container = (application as HorneoApplication).container
         setContent {
             HorneoTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                HorneoApp(container)
             }
         }
     }
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+private fun HorneoApp(container: AppContainer) {
+    val estadoFlow = remember {
+        container.authRepository.sesion.map { sesion ->
+            if (sesion == null) EstadoSesion.SinSesion else EstadoSesion.ConSesion(sesion)
+        }
+    }
+    val estado by estadoFlow.collectAsStateWithLifecycle(initialValue = EstadoSesion.Cargando)
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    HorneoTheme {
-        Greeting("Android")
+    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+        val modifier = Modifier.padding(innerPadding)
+        when (val actual = estado) {
+            EstadoSesion.Cargando -> Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+            EstadoSesion.SinSesion -> LoginScreen(modifier)
+            is EstadoSesion.ConSesion -> InicioScreen(actual.sesion, modifier)
+        }
     }
 }
