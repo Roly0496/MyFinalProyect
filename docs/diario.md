@@ -618,6 +618,32 @@ Sirve como base para redactar la memoria.
   `onSurfaceVariant`. El logo mantiene sus colores de marca también en modo oscuro.
 - Verificado en el emulador en modo claro y oscuro.
 
+### Iconos
+- Desde la versión 1.4, Material 3 ya no incluye la librería de iconos (`material-icons-core`),
+  así que la app no tenía ningún icono disponible.
+- Se descartó `material-icons-extended`: añade miles de iconos que no se usarían, y Google ya no la
+  mantiene y recomienda Material Symbols.
+- Decisión: iconos sueltos de **Material Symbols** (estilo Outlined, 24 px), descargados del
+  repositorio oficial de Google como *vector drawables* y copiados a `res/drawable` con el prefijo
+  `ic_`. Solo se incluyen los que se usan. Son los mismos iconos de los bocetos. Licencia Apache 2.0
+  (copia en `assets/licencias`).
+- Problema encontrado: los XML de Google traen `android:tint="?attr/colorControlNormal"`, un
+  atributo de la librería AppCompat, que una app hecha solo con Compose no incluye. La compilación
+  falla con «resource attr/colorControlNormal not found». Solución: quitar esa línea de cada icono
+  nuevo. En Compose no hace falta, porque el componente `Icon` pinta el icono con el color del tema.
+
+### Mostrar u ocultar la contraseña
+- El campo de contraseña del login tiene un botón con un ojo (`trailingIcon`) que alterna entre
+  `PasswordVisualTransformation` y `VisualTransformation.None`.
+- El estado «se ve / no se ve» se guarda en la propia pantalla con `rememberSaveable`, no en el
+  `ViewModel`, porque es solo visual y no afecta a la lógica del login. `rememberSaveable` lo
+  conserva al girar la pantalla.
+- Accesibilidad: el icono es un botón, así que lleva `contentDescription` con lo que hace
+  («Mostrar contraseña» / «Ocultar contraseña»). Es lo contrario que el logo, que es decorativo.
+- Verificado en el emulador: el botón se encontró por su nombre accesible en el árbol de
+  accesibilidad (`uiautomator`), y al pulsarlo la contraseña se ve y el nombre cambia. Con la
+  contraseña visible se aprecia la fuente: `Pan0l1lI` se lee sin confundir el 0 con la O ni el 1 con
+  la l o la I.
+
 ### Pendiente
-- Botón para mostrar u ocultar la contraseña en el login (decidir antes cómo incluir los iconos).
-- Resto de pantallas siguiendo los bocetos.
+- Resto de pantallas siguiendo los bocetos, empezando por la navegación (barra inferior).
