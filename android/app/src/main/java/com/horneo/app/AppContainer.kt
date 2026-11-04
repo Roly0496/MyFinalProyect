@@ -5,6 +5,7 @@ import com.horneo.app.data.local.SesionStore
 import com.horneo.app.data.remote.AutenticacionInterceptor
 import com.horneo.app.data.remote.HorneoApi
 import com.horneo.app.data.repository.AuthRepository
+import com.horneo.app.data.repository.MateriaPrimaRepository
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -33,4 +34,6 @@ class AppContainer(context: Context) {
         .create(HorneoApi::class.java)
 
     val authRepository = AuthRepository(api, sesionStore)
+
+    val materiaPrimaRepository = MateriaPrimaRepository(api)
 }

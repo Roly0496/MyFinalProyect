@@ -11,4 +11,7 @@ interface HorneoApi {
 
     @GET("api/usuarios/yo")
     suspend fun yo(): UsuarioRespuesta
+
+    @GET("api/materias-primas")
+    suspend fun materiasPrimas(): List<MateriaPrimaRespuesta>
 }
