@@ -586,6 +586,24 @@ Sirve como base para redactar la memoria.
   con una función de extensión `conAtkinson()`.
 - Verificado en el emulador: el login ya usa la fuente nueva.
 
+### Icono de la app
+- El robot verde de la plantilla se sustituyó por el monograma H, en dos formatos:
+  - Icono adaptativo (Android 8 y posteriores): tres *vector drawables* de 108×108 dp en
+    `res/drawable` (`ic_launcher_background`, `ic_launcher_foreground` e `ic_launcher_monochrome`),
+    referenciados desde `mipmap-anydpi-v26/ic_launcher.xml` e `ic_launcher_round.xml`. Al ser
+    vectores, se ven nítidos en cualquier pantalla.
+  - Imágenes `.webp` en `mipmap-mdpi` … `mipmap-xxxhdpi` (de 48 a 192 px), para Android 7, que no
+    tiene iconos adaptativos y que la app admite (`minSdk` 24). Se generaron con un script en Python
+    (Pillow) con la misma geometría que los vectores.
+- Los colores son los del tema: fondo `primary` (#8B4F26), H en `primaryContainer` (#FFDBC8) y pan en
+  `inversePrimary` (#FFB68A).
+- Los tres cortes del pan se dibujan como huecos (`fillType="evenOdd"`), no como líneas encima. Así
+  funcionan igual en la capa de color, donde por el hueco se ve el fondo, y en la monocroma, donde el
+  sistema solo usa la forma. Si fueran líneas de color, en monocromo desaparecerían.
+- La plantilla usaba el primer plano también como capa monocroma. Ahora tiene su propia capa.
+- Verificado en el emulador (ficha de la app en Ajustes, recorte circular). La capa monocroma no
+  se pudo comprobar porque el emulador sin ventana no permite activar los iconos temáticos.
+
 ### Pendiente
-- Icono adaptativo de la app (fondo, primer plano y monocromo) y logotipo en el login.
+- Logotipo (icono + «Horneo») en la pantalla de login.
 - Resto de pantallas siguiendo los bocetos.
