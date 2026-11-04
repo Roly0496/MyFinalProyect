@@ -458,3 +458,134 @@ Sirve como base para redactar la memoria.
 - Maqueta de diseño (colores, fuente, logo, accesibilidad) antes de seguir con las pantallas.
 - Resto de pantallas: materias primas, productos y recetas, movimientos, producción, ventas,
   usuarios.
+
+## 29/10/2026
+
+### Diseño: paleta de colores
+- Se compararon tres paletas con los roles de color de Material 3 (`primary`, `onPrimary`,
+  `surface`…), en modo claro y oscuro, y se calculó el contraste de cada combinación según WCAG 2.1
+  (nivel AA: 4,5:1 para texto normal, 3:1 para texto grande):
+  - A. Corteza tostada: marrón y naranja tostado, como la corteza del pan.
+  - B. Trigo y oliva: verde oliva y dorado de trigo.
+  - C. Frutos rojos: granate de frambuesa y miel.
+- Elegida: **A, Corteza tostada**. En una app de inventario los colores tienen significado: el rojo
+  indica un problema (stock bajo, error) y el verde, que todo va bien. Con la B, el verde de la marca
+  se confundiría con «stock correcto». Con la C, el granate se parecería al rojo de error. El marrón
+  anaranjado no choca con ninguno de los dos, así que las alertas destacan.
+- Colores principales (claro / oscuro): `primary` #8C4A1A / #FFB68C, `background` #FFF8F5 /
+  #1A120D, `error` #BA1A1A / #FFB4AB.
+- Pendiente al pasarlo al código: desactivar `dynamicColor` en el tema. Si se deja activado, en
+  Android 12 y posteriores la app coge los colores del fondo de pantalla del móvil (Material You) y no
+  los de la marca.
+
+### Diseño: tipografía
+- Opciones comparadas: Roboto (la del sistema), Nunito en títulos con Roboto en el texto, y Atkinson
+  Hyperlegible Next. Se probaron con caracteres que se confunden con facilidad (0 y O, 1, l e I) y
+  con la letra del sistema al 100 % y al 130 %.
+- Elegida: **Atkinson Hyperlegible Next**, diseñada por el Braille Institute para personas con baja
+  visión. La app muestra muchas cantidades y códigos (por ejemplo, «T55», «10 ud», «1.000 g»), y una
+  fuente en la que cada carácter se distingue claramente reduce los errores de lectura.
+- Los tamaños se definen en `sp` con los roles de `Typography` de Material 3 (`titleLarge` para la
+  barra superior, `labelLarge` para los botones…). Los `sp` respetan el tamaño de letra que elige el
+  usuario en el sistema.
+- La fuente se incluirá dentro de la app (archivos `.ttf` en `res/font`) y no se descargará al
+  abrirla, para que funcione sin internet y no dependa de Google Play Services durante la demo.
+
+### Diseño: logo
+- El icono de una app Android es un icono adaptativo con dos capas de 108×108 dp: fondo y primer
+  plano. El launcher solo enseña los 72 dp centrales y los recorta con su forma (círculo, squircle,
+  cuadrado redondeado…). Por eso el dibujo tiene que caber en la zona segura, un círculo de 66 dp en el
+  centro. Desde Android 13 hay además una capa monocroma para los iconos temáticos.
+- Se compararon tres conceptos (boca del horno, hogaza con greñas y monograma H), con las tres
+  formas de launcher, a tamaño real (48, 32 y 20 px) y en monocromo.
+- Elegido: **monograma H**. Es la inicial de Horneo, con dos trazos verticales en crema y, como trazo
+  horizontal, un pan dorado con tres pequeños cortes. Fondo marrón `primary` de la paleta. Es sobrio,
+  como corresponde a una herramienta de trabajo, y el pan lo relaciona con el obrador.
+- El mismo dibujo, junto al nombre «Horneo», se usará como logotipo en la pantalla de login.
+
+### Repositorio
+- Se ignora `.idea/deviceManager.xml`, un archivo de configuración local de Android Studio.
+
+### Pendiente
+- Diseño: boceto de las pantallas principales con la navegación entre ellas.
+- Pasar la paleta y la tipografía al tema de la app (`ui/theme`).
+- Resto de pantallas: materias primas, productos y recetas, movimientos, producción, ventas,
+  usuarios.
+
+## 04/11/2026
+
+### Diseño: navegación
+- Barra inferior con las cuatro tareas del día a día: **Inicio**, **Almacén**, **Producción** y
+  **Ventas**. El resto de pantallas se abre desde ellas.
+- Los movimientos no tienen pestaña propia. Las entradas, mermas y ajustes se registran desde la
+  ficha de cada materia prima o producto, que es donde el usuario está mirando el stock.
+- Un icono de cuenta en la barra superior lleva a cambiar la contraseña, cerrar sesión y, solo para el
+  administrador, la gestión de usuarios.
+- Las opciones de administrador (botón de añadir, ajuste, editar, coste, caja, usuarios) se
+  **ocultan** al empleado en lugar de mostrarse desactivadas, porque un botón que no se puede pulsar
+  confunde. La API sigue rechazando esas peticiones con 403, así que la seguridad no depende de la app.
+
+### Diseño: bocetos de pantallas
+- Se dibujaron nueve pantallas de baja fidelidad con la paleta, la fuente y el logo elegidos, y con
+  los mismos campos que devuelve la API:
+  1. Login: logotipo, usuario, contraseña con botón para mostrarla, «Entrar».
+  2. Inicio: primero las alertas de materias primas bajo mínimo (campo `bajoMinimo`), después la
+     producción del día, la caja del día (solo administrador) y atajos a «Nueva venta» y
+     «Registrar producción».
+  3. Almacén: pestañas «Materias primas» y «Productos», con el stock y la unidad en cada fila.
+  4. Detalle de materia prima: stock en grande, botones Entrada / Merma / Ajuste e historial de
+     movimientos.
+  5. Registrar merma: cantidad en positivo (la app la envía en negativo), unidad fija junto al
+     campo, motivo obligatorio y stock que quedará después.
+  6. Detalle de producto: precio, stock y receta por unidad. Coste y margen solo para el
+     administrador. Un producto de reventa muestra «Entrada» en lugar de receta.
+  7. Registrar producción: antes de enviar, la app multiplica la receta por la cantidad, la compara
+     con el stock y avisa de lo que falta (por ejemplo, «produce como máximo 34 ud»). El backend lo
+     vuelve a comprobar, porque es quien tiene el stock real.
+  8. Nueva venta: lista de productos con botones + y − grandes, pensada para el mostrador, y el
+     total siempre visible.
+  9. Ticket: confirmación con el detalle que devuelve `POST /api/ventas`.
+- Las listas de producción y ventas y los formularios de alta y edición siguen los mismos patrones
+  y no se dibujaron aparte.
+- Criterios de accesibilidad aplicados en los bocetos:
+  - Los avisos llevan texto además de color («Bajo mínimo», cantidades con signo + y −), para que
+    se entiendan aunque no se distinga el color.
+  - Los errores aparecen debajo de cada campo y dicen cómo arreglarlos.
+  - Los botones del mostrador son grandes.
+  - Los bocetos se probaron también con la letra del sistema al 130 %.
+
+### Tema de la app: colores
+- Un `ColorScheme` de Material 3 tiene 47 roles de color (`surfaceContainer`, `outlineVariant`,
+  `inverseSurface`…), no solo los que se usaron en los bocetos. En lugar de inventarlos, se generaron
+  con el algoritmo oficial de Material 3 (el mismo que usa la web Material Theme Builder) a partir del
+  color semilla `#8C4A1A`, en la variante por defecto, *Tonal Spot*. Se descartó la variante
+  *Fidelity* porque cambiaba el terciario a azul y ya no era la paleta elegida.
+- El algoritmo ajusta el `primary` a `#8B4F26`, prácticamente igual al color semilla.
+- `Color.kt` contiene los 47 roles en claro y oscuro, con los nombres que exporta Theme Builder
+  (`primaryLight`, `primaryDark`…). `Theme.kt` los asigna todos en `lightColorScheme` y
+  `darkColorScheme`. Si se deja uno sin asignar, Compose usa el morado por defecto.
+- Se quitó el color dinámico (`dynamicColor`), así que la app mantiene siempre los colores de la
+  marca.
+- Se comprobó el contraste de 20 combinaciones de texto y fondo con los colores generados, y todas
+  cumplen WCAG AA. La más justa es `onPrimary` sobre `primary` en modo claro, con 6,47:1.
+- Verificado en el emulador, en modo claro y oscuro, con la pantalla de login.
+
+### Tema de la app: tipografía
+- Atkinson Hyperlegible Next solo se publica como fuente variable: un único archivo con un eje de
+  grosor de 200 a 800. Compose solo aplica el grosor de una fuente variable desde Android 8 (API 26), y
+  la app admite desde Android 7 (`minSdk` 24). Por eso se generaron con `fontTools` tres archivos
+  estáticos (Regular 400, Medium 500, Bold 700) en `res/font`, de unos 48 KB cada uno.
+- La licencia es SIL OFL 1.1, que permite incluir la fuente en la app y generar versiones derivadas,
+  porque no tiene «nombre reservado». Una copia de la licencia va dentro de la app, en
+  `assets/licencias`.
+- Se comprobó con `fontTools` que la fuente incluye todos los caracteres del español (ñ, tildes, ¿,
+  ¡, €). Por defecto sus cifras son proporcionales (el «1» es más estrecho que el «0»), pero tiene la
+  característica `tnum` (cifras de ancho fijo). Se activa en todos los estilos para que las cantidades
+  queden alineadas en columnas.
+- `Type.kt` mantiene los tamaños de Material 3 (en `sp`) y solo cambia la fuente de los 15 estilos,
+  con una función de extensión `conAtkinson()`.
+- Verificado en el emulador: el login ya usa la fuente nueva.
+
+### Pendiente
+- Icono adaptativo de la app (fondo, primer plano y monocromo) y logotipo en el login.
+- Resto de pantallas siguiendo los bocetos.
