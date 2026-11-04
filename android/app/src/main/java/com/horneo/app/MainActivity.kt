@@ -16,8 +16,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.horneo.app.data.local.Sesion
-import com.horneo.app.ui.inicio.InicioScreen
 import com.horneo.app.ui.login.LoginScreen
+import com.horneo.app.ui.navegacion.PantallaPrincipal
 import com.horneo.app.ui.theme.HorneoTheme
 import kotlinx.coroutines.flow.map
 
@@ -49,14 +49,19 @@ private fun HorneoApp(container: AppContainer) {
     }
     val estado by estadoFlow.collectAsStateWithLifecycle(initialValue = EstadoSesion.Cargando)
 
-    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-        val modifier = Modifier.padding(innerPadding)
-        when (val actual = estado) {
-            EstadoSesion.Cargando -> Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+    when (val actual = estado) {
+        // PantallaPrincipal tiene su propio Scaffold (con la barra inferior), por eso va fuera del de abajo:
+        // dos Scaffold anidados dejarían dos veces el hueco de las barras del sistema.
+        is EstadoSesion.ConSesion -> PantallaPrincipal(actual.sesion)
+        else -> Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+            val modifier = Modifier.padding(innerPadding)
+            if (actual == EstadoSesion.Cargando) {
+                Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                LoginScreen(modifier)
             }
-            EstadoSesion.SinSesion -> LoginScreen(modifier)
-            is EstadoSesion.ConSesion -> InicioScreen(actual.sesion, modifier)
         }
     }
 }
