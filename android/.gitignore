@@ -9,6 +9,7 @@
 /.idea/assetWizardSettings.xml
 /.idea/inspectionProfiles
 /.idea/.name
+/.idea/deviceManager.xml
 .DS_Store
 /build
 /captures
