@@ -604,6 +604,20 @@ Sirve como base para redactar la memoria.
 - Verificado en el emulador (ficha de la app en Ajustes, recorte circular). La capa monocroma no
   se pudo comprobar porque el emulador sin ventana no permite activar los iconos temáticos.
 
+### Logotipo en el login
+- Nuevo componente reutilizable `LogoHorneo` en el paquete `ui/componentes`. Dibuja el monograma
+  con las mismas capas del icono (`ic_launcher_background` e `ic_launcher_foreground`), así el dibujo
+  existe en un solo sitio.
+- Como las capas miden 108 dp y el launcher solo enseña los 72 dp centrales, el componente dibuja las
+  capas a 108/72 de su tamaño (`requiredSize`) y recorta lo que sobra con una forma redondeada
+  (`clip`). Así queda igual que el icono del móvil.
+- Las imágenes son decorativas (`contentDescription = null`): el logo siempre va junto al nombre
+  «Horneo» en texto, y el lector de pantalla ya lee ese texto. Si las imágenes tuvieran descripción,
+  lo diría dos veces.
+- El login sigue el boceto 01: logo, «Horneo» en negrita y el subtítulo «Gestión del obrador» en
+  `onSurfaceVariant`. El logo mantiene sus colores de marca también en modo oscuro.
+- Verificado en el emulador en modo claro y oscuro.
+
 ### Pendiente
-- Logotipo (icono + «Horneo») en la pantalla de login.
+- Botón para mostrar u ocultar la contraseña en el login (decidir antes cómo incluir los iconos).
 - Resto de pantallas siguiendo los bocetos.
