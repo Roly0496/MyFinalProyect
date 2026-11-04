@@ -645,5 +645,32 @@ Sirve como base para redactar la memoria.
   contraseña visible se aprecia la fuente: `Pan0l1lI` se lee sin confundir el 0 con la O ni el 1 con
   la l o la I.
 
+### Barra de navegación inferior
+- Navigation Compose (ya añadida en el paso 2) con **rutas con tipos** (*type-safe*, disponibles
+  desde la versión 2.8): cada pantalla es un `@Serializable data object` (`InicioRuta`,
+  `AlmacenRuta`, `ProduccionRuta`, `VentasRuta`) en lugar de un texto, así el compilador avisa si
+  una ruta está mal escrita. Están en `ui/navegacion/Destinos.kt`, junto con una `enum class Pestana`
+  que reúne la ruta, el texto y el icono de cada pestaña.
+- `ui/navegacion/PantallaPrincipal.kt`: `Scaffold` con una `NavigationBar` abajo y un `NavHost` en
+  el centro, donde se dibuja la pantalla de la pestaña activa.
+  - `currentBackStackEntryAsState()` hace que la barra se vuelva a dibujar cuando cambia la
+    pantalla, para marcar la pestaña activa. Se comprueba con `hierarchy` para que la pestaña siga
+    marcada cuando más adelante se abran pantallas «dentro» de ella (por ejemplo, el detalle de una
+    materia prima dentro de Almacén).
+  - Al cambiar de pestaña se usa `popUpTo(inicio) { saveState = true }`, `launchSingleTop` y
+    `restoreState`. Así no se van apilando pantallas, «Atrás» desde cualquier pestaña vuelve a Inicio y
+    cada pestaña recuerda dónde estaba el usuario.
+  - Los iconos de las pestañas llevan `contentDescription = null`, porque el texto ya las nombra.
+- Inicio usa la `InicioScreen` que ya existía. Almacén, Producción y Ventas muestran de momento
+  `PantallaProvisional` («Próximamente»).
+- `MainActivity`: con sesión iniciada se muestra `PantallaPrincipal` fuera del `Scaffold` de la
+  actividad, porque dos `Scaffold` anidados dejarían dos veces el hueco de las barras del sistema.
+- Nuevos iconos de Material Symbols: `ic_home`, `ic_inventory_2`, `ic_bakery_dining` e
+  `ic_point_of_sale`.
+- Probado en el emulador desde Android Studio, con el backend en marcha y en modo claro y oscuro:
+  las cuatro pestañas cambian y se marcan, «Atrás» vuelve a Inicio y «Cerrar sesión» lleva al login.
+
 ### Pendiente
-- Resto de pantallas siguiendo los bocetos, empezando por la navegación (barra inferior).
+- Pantallas de cada pestaña siguiendo los bocetos: Almacén (materias primas y productos), Inicio
+  definitivo, Producción y Ventas.
+- Menú de cuenta (contraseña, cerrar sesión, usuarios para el administrador).
