@@ -27,11 +27,11 @@ import com.horneo.app.ui.almacen.DetalleMateriaPrimaScreen
 import com.horneo.app.ui.almacen.DetalleProductoScreen
 import com.horneo.app.ui.almacen.ElementoMovimiento
 import com.horneo.app.ui.almacen.FormularioMovimientoScreen
-import com.horneo.app.ui.componentes.PantallaProvisional
 import com.horneo.app.ui.inicio.InicioScreen
 import com.horneo.app.ui.produccion.ProduccionScreen
 import com.horneo.app.ui.produccion.RegistrarProduccionScreen
 import com.horneo.app.ui.ventas.NuevaVentaScreen
+import com.horneo.app.ui.ventas.TicketScreen
 import com.horneo.app.ui.ventas.VentasScreen
 
 // Pantalla principal con sesión iniciada: barra inferior con las cuatro tareas del día a día
@@ -154,14 +154,26 @@ fun PantallaPrincipal(sesion: Sesion, modifier: Modifier = Modifier) {
                         onCobrado = { ventaId ->
                             // El ticket sustituye a la venta: al salir del ticket se vuelve a la lista,
                             // no a una venta ya cobrada.
-                            navController.navigate(TicketRuta(ventaId)) {
+                            navController.navigate(TicketRuta(ventaId, recienCobrada = true)) {
                                 popUpTo<NuevaVentaRuta> { inclusive = true }
                             }
                         }
                     )
                 }
-                // De momento provisional: el ticket llega en el siguiente paso.
-                composable<TicketRuta> { PantallaProvisional("Ticket") }
+                composable<TicketRuta> { entrada ->
+                    val ruta = entrada.toRoute<TicketRuta>()
+                    TicketScreen(
+                        ventaId = ruta.ventaId,
+                        recienCobrada = ruta.recienCobrada,
+                        onCerrar = { navController.popBackStack() },
+                        // Otra venta: el ticket se sustituye por una venta nueva, vacía.
+                        onNuevaVenta = {
+                            navController.navigate(NuevaVentaRuta) {
+                                popUpTo<TicketRuta> { inclusive = true }
+                            }
+                        }
+                    )
+                }
             }
         }
     }

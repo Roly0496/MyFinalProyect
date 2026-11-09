@@ -62,8 +62,9 @@ data object VentasRuta
 @Serializable
 data object NuevaVentaRuta
 
+// recienCobrada: si se acaba de cobrar, el ticket muestra "Venta registrada" y los botones para seguir.
 @Serializable
-data class TicketRuta(val ventaId: Long)
+data class TicketRuta(val ventaId: Long, val recienCobrada: Boolean = false)
 
 // Pestañas de la barra inferior, en el orden en que aparecen.
 enum class Pestana(val ruta: Any, val etiqueta: String, @DrawableRes val icono: Int) {
