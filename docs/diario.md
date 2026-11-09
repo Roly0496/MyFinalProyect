@@ -912,8 +912,63 @@ Sirve como base para redactar la memoria.
 - Probado en el emulador: los movimientos se guardan y, al volver, el detalle muestra el stock
   nuevo y el movimiento en el historial sin salir de la pantalla.
 
+### Detalle de producto: decisiones
+- Siguiendo el boceto 06, en tres pasos: capa de datos, pantalla de detalle y movimientos.
+- Diferencias con las materias primas, vistas en el backend antes de empezar: el stock de los
+  productos son unidades enteras (`Integer`), la entrada solo vale para productos de reventa (los
+  elaborados suben su stock con una producción) y el coste de un elaborado sale de su receta,
+  mientras que el de uno de reventa es su precio de compra.
+- Decisión 1: ampliar el formulario de movimientos que ya existía para que sirva también con
+  productos, en lugar de hacer otro casi igual.
+- Decisión 2: la edición de recetas (el botón «+» del boceto) se deja para más adelante, junto con
+  las demás pantallas de gestión del administrador (altas y edición de materias primas y productos).
+  Los datos de ejemplo ya traen las recetas, y así se llega antes a Producción y Ventas, que son el
+  centro de la app y lo que más se verá en la demo.
+
+### Detalle de producto: capa de datos
+- `IngredienteRespuesta` (una línea de la receta, con la unidad de la materia prima para mostrar
+  «50 g» sin otra petición) y `CosteRespuesta` (coste de una unidad, solo administrador).
+- `MovimientoProductoPeticion` y `AjusteProductoPeticion`: como las de materias primas, pero con
+  `Int`. Una prueba comprueba que se envía `12` y no `12.00`, porque el backend espera un `Integer`.
+- `HorneoApi`: producto, receta, coste e historial, y las tres llamadas `POST` de movimientos de
+  productos.
+
+### Detalle de producto: pantalla
+- Las filas de la pestaña Productos se pueden tocar y abren `DetalleProductoRuta(id, nombre)`.
+- Tarjeta: tipo, precio de venta y stock (con «Agotado» si es 0). Debajo, solo para el
+  administrador, «Coste 0,32 € · margen 0,88 €» (el margen es el precio menos el coste: lo que se
+  gana con cada unidad).
+- El coste ni siquiera se pide si el usuario es empleado, porque el backend respondería 403. Por eso
+  la fábrica de este `ViewModel` recibe un dato: `DetalleProductoViewModel.factory(esAdmin)`.
+- Receta por unidad, solo en los elaborados.
+- El historial se sacó a `Historial.kt` (una función de extensión de `LazyListScope`) para que lo
+  usen los dos detalles sin copiarlo. Lo único que cambia es la unidad: en productos siempre «ud».
+- Probado en el emulador: el croissant muestra su coste, su margen y su receta.
+
+### Detalle de producto: movimientos
+- `ElementoMovimiento` (MATERIA_PRIMA o PRODUCTO) viaja en la ruta del formulario. El `ViewModel`
+  carga el elemento que toque y lo convierte siempre en lo mismo, `StockElemento` (stock y unidad),
+  así la pantalla no necesita saber si es una materia prima o un producto.
+- Productos: solo unidades enteras («Solo unidades enteras, sin decimales», también para «1.000») y
+  teclado solo numérico. Los huevos también se cuentan en «ud», pero son materia prima y sí admiten
+  decimales (una receta puede usar 0,1 huevos), así que la regla depende de si es un producto y no de
+  la unidad. Hay una prueba para cada caso (11 pruebas de reglas, 34 pruebas unitarias en total).
+- `BotonesMovimiento` se sacó a su propio archivo con dos opciones: `mostrarEntrada` (en productos,
+  solo los de reventa) y `mostrarAjuste` (solo administrador).
+- **Problema encontrado: la receta de los productos de reventa.** Al abrir el zumo de naranja salía
+  «Zumo de naranja es de reventa: no tiene receta». Causa: la app pedía siempre la receta, y el
+  backend responde 409 a la de un producto de reventa. Se había supuesto que devolvería una lista
+  vacía, y en el paso anterior solo se probó con el croissant, así que el fallo no se vio.
+- Solución: el `ViewModel` espera a que llegue el producto y solo pide la receta si es elaborado. Se
+  hizo en un commit aparte (`fix:`), separado de los movimientos.
+- Lección: comprobar cómo responde el backend en lugar de suponerlo, y probar todos los casos
+  (aquí, los dos tipos de producto) y no solo el primero.
+- Probado en el emulador: el zumo se abre sin receta y con Entrada, Merma y Ajuste; el croissant
+  solo muestra Merma y Ajuste y rechaza los decimales.
+
 ### Pendiente
-- Comprobar la vista del empleado (sin el botón Ajuste) cuando exista la pantalla de usuarios.
-- Detalle de producto con su receta; el coste solo se mostrará al administrador.
+- Comprobar la vista del empleado (sin el botón Ajuste ni el coste) cuando exista la pantalla de
+  usuarios.
+- Gestión del administrador: altas y edición de materias primas y productos, y edición de recetas.
 - Inicio definitivo, Producción y Ventas.
 - Menú de cuenta (contraseña, cerrar sesión, usuarios para el administrador).
