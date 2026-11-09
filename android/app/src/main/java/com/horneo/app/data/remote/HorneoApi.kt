@@ -68,4 +68,17 @@ interface HorneoApi {
 
     @POST("api/producciones")
     suspend fun registrarProduccion(@Body peticion: RegistrarProduccionPeticion): ProduccionRespuesta
+
+    @GET("api/ventas")
+    suspend fun ventas(@Query("fecha") fecha: String): List<VentaRespuesta>
+
+    @GET("api/ventas/{id}")
+    suspend fun ticket(@Path("id") id: Long): TicketRespuesta
+
+    // Solo administrador.
+    @GET("api/ventas/caja")
+    suspend fun caja(@Query("fecha") fecha: String): CajaRespuesta
+
+    @POST("api/ventas")
+    suspend fun registrarVenta(@Body peticion: RegistrarVentaPeticion): TicketRespuesta
 }

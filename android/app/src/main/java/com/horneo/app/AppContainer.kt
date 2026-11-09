@@ -9,6 +9,7 @@ import com.horneo.app.data.repository.MateriaPrimaRepository
 import com.horneo.app.data.repository.MovimientoRepository
 import com.horneo.app.data.repository.ProduccionRepository
 import com.horneo.app.data.repository.ProductoRepository
+import com.horneo.app.data.repository.VentaRepository
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -45,4 +46,6 @@ class AppContainer(context: Context) {
     val movimientoRepository = MovimientoRepository(api)
 
     val produccionRepository = ProduccionRepository(api)
+
+    val ventaRepository = VentaRepository(api)
 }
