@@ -13,7 +13,7 @@ class ProductoRepository(private val api: HorneoApi) {
 
     suspend fun obtener(id: Long): Result<ProductoRespuesta> = runCatching { api.producto(id) }
 
-    // Receta por unidad. Los productos de reventa no tienen: la lista llega vacía.
+    // Receta por unidad. Solo para productos elaborados: para uno de reventa el backend responde 409.
     suspend fun receta(id: Long): Result<List<IngredienteRespuesta>> = runCatching { api.recetaDeProducto(id) }
 
     // Solo para el administrador: a un empleado el backend le responde 403.

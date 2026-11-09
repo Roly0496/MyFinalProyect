@@ -13,6 +13,7 @@ import com.horneo.app.HorneoApplication
 import com.horneo.app.data.remote.IngredienteRespuesta
 import com.horneo.app.data.remote.MovimientoRespuesta
 import com.horneo.app.data.remote.ProductoRespuesta
+import com.horneo.app.data.remote.TipoProducto
 import com.horneo.app.data.remote.mensajeDeError
 import com.horneo.app.data.repository.ProductoRepository
 import com.horneo.app.ui.navegacion.DetalleProductoRuta
@@ -55,12 +56,17 @@ class DetalleProductoViewModel(
             // Las peticiones van a la vez. El coste solo se pide si el usuario es administrador:
             // a un empleado el backend le respondería 403, así que ni se intenta.
             val producto = async { productoRepository.obtener(id) }
-            val receta = async { productoRepository.receta(id) }
             val movimientos = async { productoRepository.movimientos(id) }
             val coste = if (esAdmin) async { productoRepository.coste(id) } else null
 
             val resultadoProducto = producto.await()
-            val resultadoReceta = receta.await()
+            // La receta solo existe en los elaborados: para uno de reventa el backend responde 409
+            // («no tiene receta»). Como el tipo no se sabe hasta que llega el producto, la receta se
+            // pide después y solo si hace falta.
+            val resultadoReceta = when (resultadoProducto.getOrNull()?.tipo) {
+                TipoProducto.ELABORADO -> productoRepository.receta(id)
+                else -> Result.success(emptyList())
+            }
             val resultadoMovimientos = movimientos.await()
             val resultadoCoste = coste?.await()
 
