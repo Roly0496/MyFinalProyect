@@ -1,5 +1,6 @@
 package com.horneo.app.ui.navegacion
 
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -18,6 +19,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.horneo.app.data.local.Sesion
+import com.horneo.app.ui.almacen.AlmacenScreen
 import com.horneo.app.ui.componentes.PantallaProvisional
 import com.horneo.app.ui.inicio.InicioScreen
 
@@ -59,10 +61,14 @@ fun PantallaPrincipal(sesion: Sesion, modifier: Modifier = Modifier) {
         NavHost(
             navController = navController,
             startDestination = InicioRuta,
-            modifier = Modifier.padding(innerPadding)
+            // consumeWindowInsets avisa a las pantallas de dentro de que el hueco de las barras del sistema
+            // ya está cubierto, para que su TopAppBar no lo vuelva a dejar.
+            modifier = Modifier
+                .padding(innerPadding)
+                .consumeWindowInsets(innerPadding)
         ) {
             composable<InicioRuta> { InicioScreen(sesion) }
-            composable<AlmacenRuta> { PantallaProvisional("Almacén") }
+            composable<AlmacenRuta> { AlmacenScreen() }
             composable<ProduccionRuta> { PantallaProvisional("Producción") }
             composable<VentasRuta> { PantallaProvisional("Ventas") }
         }
