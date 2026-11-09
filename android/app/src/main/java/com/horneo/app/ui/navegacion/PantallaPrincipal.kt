@@ -23,6 +23,7 @@ import androidx.navigation.toRoute
 import com.horneo.app.data.local.Sesion
 import com.horneo.app.ui.almacen.AlmacenScreen
 import com.horneo.app.ui.almacen.DetalleMateriaPrimaScreen
+import com.horneo.app.ui.almacen.FormularioMovimientoScreen
 import com.horneo.app.ui.componentes.PantallaProvisional
 import com.horneo.app.ui.inicio.InicioScreen
 
@@ -84,7 +85,19 @@ fun PantallaPrincipal(sesion: Sesion, modifier: Modifier = Modifier) {
                     val ruta = entrada.toRoute<DetalleMateriaPrimaRuta>()
                     DetalleMateriaPrimaScreen(
                         nombre = ruta.nombre,
-                        onVolver = { navController.popBackStack() }
+                        onVolver = { navController.popBackStack() },
+                        onMovimiento = { tipo ->
+                            navController.navigate(FormularioMovimientoRuta(ruta.id, ruta.nombre, tipo))
+                        }
+                    )
+                }
+                composable<FormularioMovimientoRuta> { entrada ->
+                    val ruta = entrada.toRoute<FormularioMovimientoRuta>()
+                    FormularioMovimientoScreen(
+                        nombre = ruta.nombre,
+                        // Cerrar y guardar vuelven los dos al detalle.
+                        onCerrar = { navController.popBackStack() },
+                        onGuardado = { navController.popBackStack() }
                     )
                 }
             }

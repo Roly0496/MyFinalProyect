@@ -2,6 +2,7 @@ package com.horneo.app.ui.navegacion
 
 import androidx.annotation.DrawableRes
 import com.horneo.app.R
+import com.horneo.app.ui.almacen.TipoFormularioMovimiento
 import kotlinx.serialization.Serializable
 
 // Rutas de navegación "con tipos" (type-safe): cada pantalla es un objeto en lugar de un texto,
@@ -22,6 +23,10 @@ data object AlmacenRuta
 // que así se ve desde el primer momento, sin esperar a que lleguen los datos.
 @Serializable
 data class DetalleMateriaPrimaRuta(val id: Long, val nombre: String)
+
+// El mismo formulario sirve para entrada, merma y ajuste: el tipo viaja en la ruta.
+@Serializable
+data class FormularioMovimientoRuta(val id: Long, val nombre: String, val tipo: TipoFormularioMovimiento)
 
 @Serializable
 data object ProduccionRuta

@@ -14,11 +14,13 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -43,12 +45,13 @@ import com.horneo.app.ui.formatearPrecioUnitario
 import com.horneo.app.ui.theme.entrada
 
 // Detalle de una materia prima (boceto 04): tarjeta con el stock y, debajo, su historial de movimientos.
-// Los botones Entrada / Merma / Ajuste se añaden en el siguiente paso.
+// Los botones Entrada / Merma / Ajuste abren el formulario de movimientos.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetalleMateriaPrimaScreen(
     nombre: String,
     onVolver: () -> Unit,
+    onMovimiento: (TipoFormularioMovimiento) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: DetalleMateriaPrimaViewModel = viewModel(factory = DetalleMateriaPrimaViewModel.Factory),
 ) {
@@ -81,18 +84,26 @@ fun DetalleMateriaPrimaScreen(
                 Button(onClick = viewModel::cargar) { Text("Reintentar") }
             }
 
-            is DetalleMateriaPrimaUiState.Listo -> ContenidoDetalle(estadoActual.materiaPrima, estadoActual.movimientos)
+            is DetalleMateriaPrimaUiState.Listo ->
+                ContenidoDetalle(estadoActual.materiaPrima, estadoActual.movimientos, onMovimiento)
         }
     }
 }
 
 @Composable
-private fun ContenidoDetalle(materiaPrima: MateriaPrimaRespuesta, movimientos: List<MovimientoRespuesta>) {
+private fun ContenidoDetalle(
+    materiaPrima: MateriaPrimaRespuesta,
+    movimientos: List<MovimientoRespuesta>,
+    onMovimiento: (TipoFormularioMovimiento) -> Unit,
+) {
     // Una sola LazyColumn para todo: la tarjeta y el título van como elementos sueltos (item)
     // y el historial como lista (items). Así toda la pantalla se desplaza junta.
     LazyColumn(Modifier.fillMaxSize()) {
         item {
             TarjetaStock(materiaPrima, Modifier.padding(16.dp))
+        }
+        item {
+            BotonesMovimiento(onMovimiento, Modifier.padding(horizontal = 16.dp))
         }
         item {
             Text(
@@ -148,6 +159,23 @@ private fun TarjetaStock(materiaPrima: MateriaPrimaRespuesta, modifier: Modifier
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+// Tres botones con distinto peso visual, como en el boceto: la entrada es la acción más habitual
+// (relleno), la merma va después (tonal) y el ajuste es la menos frecuente (con borde).
+@Composable
+private fun BotonesMovimiento(onMovimiento: (TipoFormularioMovimiento) -> Unit, modifier: Modifier = Modifier) {
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Button(onClick = { onMovimiento(TipoFormularioMovimiento.ENTRADA) }, modifier = Modifier.weight(1f)) {
+            Text("Entrada")
+        }
+        FilledTonalButton(onClick = { onMovimiento(TipoFormularioMovimiento.MERMA) }, modifier = Modifier.weight(1f)) {
+            Text("Merma")
+        }
+        OutlinedButton(onClick = { onMovimiento(TipoFormularioMovimiento.AJUSTE) }, modifier = Modifier.weight(1f)) {
+            Text("Ajuste")
         }
     }
 }
