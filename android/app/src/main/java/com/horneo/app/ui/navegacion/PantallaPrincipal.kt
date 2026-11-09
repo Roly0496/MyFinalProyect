@@ -31,6 +31,7 @@ import com.horneo.app.ui.componentes.PantallaProvisional
 import com.horneo.app.ui.inicio.InicioScreen
 import com.horneo.app.ui.produccion.ProduccionScreen
 import com.horneo.app.ui.produccion.RegistrarProduccionScreen
+import com.horneo.app.ui.ventas.NuevaVentaScreen
 import com.horneo.app.ui.ventas.VentasScreen
 
 // Pantalla principal con sesión iniciada: barra inferior con las cuatro tareas del día a día
@@ -147,8 +148,19 @@ fun PantallaPrincipal(sesion: Sesion, modifier: Modifier = Modifier) {
                         onVenta = { venta -> navController.navigate(TicketRuta(venta.id)) }
                     )
                 }
-                // De momento provisionales: llegan en los siguientes pasos.
-                composable<NuevaVentaRuta> { PantallaProvisional("Nueva venta") }
+                composable<NuevaVentaRuta> {
+                    NuevaVentaScreen(
+                        onCerrar = { navController.popBackStack() },
+                        onCobrado = { ventaId ->
+                            // El ticket sustituye a la venta: al salir del ticket se vuelve a la lista,
+                            // no a una venta ya cobrada.
+                            navController.navigate(TicketRuta(ventaId)) {
+                                popUpTo<NuevaVentaRuta> { inclusive = true }
+                            }
+                        }
+                    )
+                }
+                // De momento provisional: el ticket llega en el siguiente paso.
                 composable<TicketRuta> { PantallaProvisional("Ticket") }
             }
         }
