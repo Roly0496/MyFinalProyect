@@ -734,11 +734,70 @@ Sirve como base para redactar la memoria.
 - Problema encontrado: la consola de base de datos de IntelliJ necesita la edición Ultimate, que es
   de pago. Se ejecutó desde la terminal con el cliente `mysql`, que además deshace la transacción
   automáticamente si algo falla.
+- Problema encontrado: al ejecutar el script, MySQL respondía «contraseña incorrecta». La contraseña
+  del usuario `horneo` no está en `application.properties`, sino en `backend/secrets.properties`
+  (`spring.datasource.password`), que no se sube a GitHub. Con esa contraseña funcionó.
 - Probado en el emulador desde Android Studio: aparecen las 8 materias primas con su stock y su
   unidad, Mantequilla y Huevos con el aviso, y las cantidades con el formato español.
 
+### Almacén: datos de los productos
+- Mismo camino que las materias primas: `ProductoDtos.kt` (`enum class TipoProducto` y
+  `ProductoRespuesta`), `HorneoApi.productos()` (`GET /api/productos`), `ProductoRepository` y
+  su instancia en `AppContainer`.
+- Dos diferencias con las materias primas:
+  - `precioCompra` es opcional (`BigDecimal?`): los productos elaborados no tienen precio de
+    compra, porque su coste sale de la receta. Sin el `?`, la app fallaría al leer un elaborado.
+  - `stockActual` es un `Int` y no un `BigDecimal`: los productos se cuentan por unidades enteras
+    (en la base de datos es `INT`), mientras que las materias primas llevan decimales.
+- Pruebas unitarias (`ProductoDtosTest`, 2 pruebas): un elaborado sin precio de compra y un
+  producto de reventa con precio de compra.
+
+### Seguridad: el empleado no recibe costes
+- **Problema encontrado:** al revisar qué devolvía el backend para preparar la pantalla de productos,
+  se vio que `GET /api/productos` enviaba el `precioCompra` a cualquier usuario, también al empleado.
+  En un producto de reventa, el precio de compra es su coste, y se había acordado que el empleado no
+  ve costes. Lo mismo pasaba con el `precioUnitario` de las materias primas: con la receta de un
+  producto y esos precios, el empleado podía calcular el coste igualmente.
+- Se plantearon dos opciones: esconder el dato solo en la pantalla de la app, o que el backend no
+  lo enviara. Se eligió la segunda: si solo se esconde en la app, el dato sigue llegando al móvil y
+  cualquiera que mire las peticiones (por ejemplo, con un proxy) lo ve. La seguridad tiene que estar
+  en el servidor; la app solo decide qué se muestra.
+- Solución en el backend:
+  - `ProductoRespuesta` y `MateriaPrimaRespuesta` tienen un segundo método de construcción,
+    `sinCostes()`, que deja el precio a `null`.
+  - En `ProductoController` y `MateriaPrimaController`, los `GET` que usan los dos roles reciben el
+    usuario de la petición (`@RequestAttribute`, igual que en movimientos y ventas) y un método
+    privado `responder()` elige la respuesta según el rol. Así la regla está en un solo sitio.
+    Crear y actualizar no se tocan, porque ya son `@SoloAdmin`.
+  - En `MateriaPrimaRespuesta`, las dos versiones usan un método privado `construir()`, para que el
+    cálculo de `bajoMinimo` no esté repetido.
+- **Problema encontrado:** en la app, `precioUnitario` estaba declarado como no nulo. Con el cambio
+  del backend, la app habría fallado al abrir el Almacén con un empleado. Se cambió a `BigDecimal?`
+  en el mismo commit que el backend, porque los dos lados forman un mismo contrato.
+- Pruebas:
+  - Backend: `ProductoControllerTest` y `MateriaPrimaControllerTest` (MockMvc, 2 pruebas cada uno).
+    El empleado recibe el precio a `null` (en un elemento y en toda la lista) y sigue recibiendo el
+    resto de datos, como el stock y el aviso de bajo mínimo. El administrador sí recibe el precio.
+    18 pruebas del backend en total, todas correctas.
+  - Se comprobó que las pruebas sirven: al quitar el arreglo de forma temporal, fallan (el empleado
+    recibía `"precioCompra":0.95`); al restaurarlo, vuelven a pasar.
+  - App: nueva prueba en `MateriaPrimaDtosTest` que lee una respuesta con el precio a `null`.
+    11 pruebas unitarias en total, todas correctas.
+- Lección: revisar el contrato de la API antes de hacer cada pantalla sirve también para encontrar
+  fallos de seguridad que no se vieron al hacer el backend.
+
+### Repositorio
+- Problema encontrado: un `git add` con varias rutas, pegado en varias líneas, se ejecutó como
+  varios comandos. Solo se añadió el primer archivo, y el commit salió con 1 archivo en vez de 5.
+  Como ese commit aún no estaba subido, se completó con `git commit --amend --no-edit`.
+  Desde entonces se añade cada archivo con su propio `git add` y se revisa `git status` antes de
+  cada commit. `--amend` solo se usa con commits que no se han subido a GitHub.
+- Mensajes de commit: `feat:` para funcionalidades nuevas y `fix:` para correcciones (los dos
+  arreglos de costes).
+
 ### Pendiente
-- Lista de productos (segunda pestaña del Almacén).
+- Lista de productos (segunda pestaña del Almacén). El precio de compra solo se mostrará al
+  administrador.
 - Detalle de cada materia prima y producto, con sus movimientos (entrada, merma y ajuste).
 - Inicio definitivo, Producción y Ventas.
 - Menú de cuenta (contraseña, cerrar sesión, usuarios para el administrador).
