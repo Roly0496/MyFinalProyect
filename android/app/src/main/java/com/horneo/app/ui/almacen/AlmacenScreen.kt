@@ -1,17 +1,9 @@
 package com.horneo.app.ui.almacen
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
@@ -25,14 +17,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.horneo.app.data.remote.MateriaPrimaRespuesta
 import com.horneo.app.data.remote.ProductoRespuesta
 import com.horneo.app.data.remote.TipoProducto
+import com.horneo.app.ui.componentes.ContenidoLista
 import com.horneo.app.ui.componentes.EtiquetaAviso
 import com.horneo.app.ui.formatearCantidad
 import com.horneo.app.ui.formatearPrecio
@@ -89,49 +80,6 @@ fun AlmacenScreen(
                 clave = { it.id }
             ) { producto -> FilaProducto(producto, onClick = { onProductoClick(producto) }) }
         }
-    }
-}
-
-// Dibuja cualquier lista del almacén según su estado: cargando, error, vacía o con datos.
-// Cada pestaña solo tiene que decir cómo se dibuja una fila (el parámetro fila).
-@Composable
-private fun <T> ContenidoLista(
-    estado: ListaUiState<T>,
-    textoVacio: String,
-    onReintentar: () -> Unit,
-    clave: (T) -> Any,
-    fila: @Composable (T) -> Unit,
-) {
-    when (estado) {
-        ListaUiState.Cargando -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
-
-        is ListaUiState.Error -> Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(estado.mensaje, textAlign = TextAlign.Center)
-            Button(onClick = onReintentar) { Text("Reintentar") }
-        }
-
-        is ListaUiState.Listo ->
-            if (estado.elementos.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(textoVacio, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            } else {
-                // LazyColumn solo dibuja las filas visibles en pantalla (como un RecyclerView).
-                LazyColumn(Modifier.fillMaxSize()) {
-                    items(estado.elementos, key = clave) { elemento ->
-                        fila(elemento)
-                        HorizontalDivider()
-                    }
-                }
-            }
     }
 }
 

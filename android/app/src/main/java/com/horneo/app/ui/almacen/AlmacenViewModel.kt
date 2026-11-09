@@ -12,18 +12,11 @@ import com.horneo.app.data.remote.ProductoRespuesta
 import com.horneo.app.data.remote.mensajeDeError
 import com.horneo.app.data.repository.MateriaPrimaRepository
 import com.horneo.app.data.repository.ProductoRepository
+import com.horneo.app.ui.componentes.ListaUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-
-// Los tres estados posibles de una lista que se pide al servidor.
-// Es genérica (<T>) para usar la misma con materias primas y con productos.
-sealed interface ListaUiState<out T> {
-    data object Cargando : ListaUiState<Nothing>
-    data class Error(val mensaje: String) : ListaUiState<Nothing>
-    data class Listo<T>(val elementos: List<T>) : ListaUiState<T>
-}
 
 class AlmacenViewModel(
     private val materiaPrimaRepository: MateriaPrimaRepository,

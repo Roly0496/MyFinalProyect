@@ -38,8 +38,15 @@ data class FormularioMovimientoRuta(
     val elemento: ElementoMovimiento,
 )
 
+// Producción también es un subgrafo: la lista del día y el formulario para registrar.
+@Serializable
+data object ProduccionGrafo
+
 @Serializable
 data object ProduccionRuta
+
+@Serializable
+data object RegistrarProduccionRuta
 
 @Serializable
 data object VentasRuta
@@ -48,6 +55,6 @@ data object VentasRuta
 enum class Pestana(val ruta: Any, val etiqueta: String, @DrawableRes val icono: Int) {
     INICIO(InicioRuta, "Inicio", R.drawable.ic_home),
     ALMACEN(AlmacenGrafo, "Almacén", R.drawable.ic_inventory_2),
-    PRODUCCION(ProduccionRuta, "Producción", R.drawable.ic_bakery_dining),
+    PRODUCCION(ProduccionGrafo, "Producción", R.drawable.ic_bakery_dining),
     VENTAS(VentasRuta, "Ventas", R.drawable.ic_point_of_sale),
 }

@@ -4,6 +4,7 @@ import com.horneo.app.data.remote.Unidad
 import java.math.BigDecimal
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -43,3 +44,27 @@ private val MIL = BigDecimal(1000)
 private val formatoFechaHora = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
 
 fun formatearFechaHora(fecha: LocalDateTime): String = fecha.format(formatoFechaHora)
+
+private val formatoHora = DateTimeFormatter.ofPattern("HH:mm")
+
+fun formatearHora(fecha: LocalDateTime): String = fecha.format(formatoHora)
+
+// Nombres cortos escritos a mano en lugar de pedírselos a Java: según la versión, Java escribe
+// "nov." (con punto) y Android "nov", y así el resultado es siempre el mismo en la app y en las pruebas.
+private val MESES = listOf("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sept", "oct", "nov", "dic")
+private val DIAS_SEMANA = listOf("lun", "mar", "mié", "jue", "vie", "sáb", "dom")
+
+// Día elegido en la pestaña Producción: "Hoy, 9 nov", "Ayer, 8 nov" o "lun, 3 nov".
+// Recibe "hoy" como parámetro (en lugar de mirar el reloj) para poder probarla con cualquier fecha.
+fun formatearDia(dia: LocalDate, hoy: LocalDate): String {
+    val fecha = "${dia.dayOfMonth} ${MESES[dia.monthValue - 1]}"
+    return when (dia) {
+        hoy -> "Hoy, $fecha"
+        hoy.minusDays(1) -> "Ayer, $fecha"
+        else -> {
+            // Si no es de este año, se añade el año para no confundirse.
+            val conAno = if (dia.year != hoy.year) "$fecha ${dia.year}" else fecha
+            "${DIAS_SEMANA[dia.dayOfWeek.value - 1]}, $conAno"
+        }
+    }
+}

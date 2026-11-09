@@ -4,6 +4,7 @@ import com.horneo.app.data.remote.Unidad
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.math.BigDecimal
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 class FormatoTest {
@@ -48,5 +49,21 @@ class FormatoTest {
     @Test
     fun laFechaSeMuestraConDiaMesYAno() {
         assertEquals("09/11/2026 07:05", formatearFechaHora(LocalDateTime.of(2026, 11, 9, 7, 5, 30)))
+    }
+
+    @Test
+    fun elDiaSeNombraConHoyAyerOElDiaDeLaSemana() {
+        val hoy = LocalDate.of(2026, 11, 9)  // lunes
+
+        assertEquals("Hoy, 9 nov", formatearDia(hoy, hoy))
+        assertEquals("Ayer, 8 nov", formatearDia(LocalDate.of(2026, 11, 8), hoy))
+        assertEquals("lun, 2 nov", formatearDia(LocalDate.of(2026, 11, 2), hoy))
+        // De otro año: se añade el año
+        assertEquals("mié, 31 dic 2025", formatearDia(LocalDate.of(2025, 12, 31), hoy))
+    }
+
+    @Test
+    fun laHoraSeMuestraSinSegundos() {
+        assertEquals("07:40", formatearHora(LocalDateTime.of(2026, 11, 9, 7, 40, 59)))
     }
 }

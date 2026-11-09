@@ -29,6 +29,7 @@ import com.horneo.app.ui.almacen.ElementoMovimiento
 import com.horneo.app.ui.almacen.FormularioMovimientoScreen
 import com.horneo.app.ui.componentes.PantallaProvisional
 import com.horneo.app.ui.inicio.InicioScreen
+import com.horneo.app.ui.produccion.ProduccionScreen
 
 // Pantalla principal con sesión iniciada: barra inferior con las cuatro tareas del día a día
 // y, en el centro, la pantalla de la pestaña activa.
@@ -123,7 +124,13 @@ fun PantallaPrincipal(sesion: Sesion, modifier: Modifier = Modifier) {
                     )
                 }
             }
-            composable<ProduccionRuta> { PantallaProvisional("Producción") }
+            navigation<ProduccionGrafo>(startDestination = ProduccionRuta) {
+                composable<ProduccionRuta> {
+                    ProduccionScreen(onRegistrar = { navController.navigate(RegistrarProduccionRuta) })
+                }
+                // De momento provisional: el formulario llega en el siguiente paso.
+                composable<RegistrarProduccionRuta> { PantallaProvisional("Registrar producción") }
+            }
             composable<VentasRuta> { PantallaProvisional("Ventas") }
         }
     }
