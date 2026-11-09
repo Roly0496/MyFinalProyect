@@ -45,6 +45,7 @@ fun AlmacenScreen(
     // La pantalla no sabe adónde se navega: solo avisa de qué fila se ha tocado.
     // Quien la usa (PantallaPrincipal) decide qué hacer, así la pantalla no depende de la navegación.
     onMateriaPrimaClick: (MateriaPrimaRespuesta) -> Unit,
+    onProductoClick: (ProductoRespuesta) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AlmacenViewModel = viewModel(factory = AlmacenViewModel.Factory)
 ) {
@@ -86,7 +87,7 @@ fun AlmacenScreen(
                 textoVacio = "Todavía no hay productos",
                 onReintentar = viewModel::cargarProductos,
                 clave = { it.id }
-            ) { FilaProducto(it) }
+            ) { producto -> FilaProducto(producto, onClick = { onProductoClick(producto) }) }
         }
     }
 }
@@ -158,12 +159,13 @@ private fun FilaMateriaPrima(materiaPrima: MateriaPrimaRespuesta, onClick: () ->
 // Según el boceto: tipo y precio de venta debajo del nombre, y el stock a la derecha.
 // El precio de compra no se muestra aquí; el coste irá en el detalle del producto, solo para el admin.
 @Composable
-private fun FilaProducto(producto: ProductoRespuesta) {
+private fun FilaProducto(producto: ProductoRespuesta, onClick: () -> Unit) {
     val tipo = when (producto.tipo) {
         TipoProducto.ELABORADO -> "Elaborado"
         TipoProducto.REVENTA -> "Reventa"
     }
     ListItem(
+        modifier = Modifier.clickable(onClickLabel = "Ver detalle", onClick = onClick),
         headlineContent = { Text(producto.nombre) },
         supportingContent = { Text("$tipo · ${formatearPrecio(producto.precioVenta)}") },
         trailingContent = {

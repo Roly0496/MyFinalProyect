@@ -24,6 +24,9 @@ data object AlmacenRuta
 @Serializable
 data class DetalleMateriaPrimaRuta(val id: Long, val nombre: String)
 
+@Serializable
+data class DetalleProductoRuta(val id: Long, val nombre: String)
+
 // El mismo formulario sirve para entrada, merma y ajuste: el tipo viaja en la ruta.
 @Serializable
 data class FormularioMovimientoRuta(val id: Long, val nombre: String, val tipo: TipoFormularioMovimiento)
