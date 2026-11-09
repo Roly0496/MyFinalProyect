@@ -8,45 +8,66 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.horneo.app.HorneoApplication
 import com.horneo.app.data.remote.MateriaPrimaRespuesta
+import com.horneo.app.data.remote.ProductoRespuesta
 import com.horneo.app.data.remote.mensajeDeError
 import com.horneo.app.data.repository.MateriaPrimaRepository
+import com.horneo.app.data.repository.ProductoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-// Los tres estados posibles de la lista de materias primas.
-sealed interface MateriasPrimasUiState {
-    data object Cargando : MateriasPrimasUiState
-    data class Error(val mensaje: String) : MateriasPrimasUiState
-    data class Listo(val materiasPrimas: List<MateriaPrimaRespuesta>) : MateriasPrimasUiState
+// Los tres estados posibles de una lista que se pide al servidor.
+// Es genérica (<T>) para usar la misma con materias primas y con productos.
+sealed interface ListaUiState<out T> {
+    data object Cargando : ListaUiState<Nothing>
+    data class Error(val mensaje: String) : ListaUiState<Nothing>
+    data class Listo<T>(val elementos: List<T>) : ListaUiState<T>
 }
 
-class AlmacenViewModel(private val materiaPrimaRepository: MateriaPrimaRepository) : ViewModel() {
+class AlmacenViewModel(
+    private val materiaPrimaRepository: MateriaPrimaRepository,
+    private val productoRepository: ProductoRepository,
+) : ViewModel() {
 
-    private val _materiasPrimas = MutableStateFlow<MateriasPrimasUiState>(MateriasPrimasUiState.Cargando)
-    val materiasPrimas: StateFlow<MateriasPrimasUiState> = _materiasPrimas.asStateFlow()
+    private val _materiasPrimas = MutableStateFlow<ListaUiState<MateriaPrimaRespuesta>>(ListaUiState.Cargando)
+    val materiasPrimas: StateFlow<ListaUiState<MateriaPrimaRespuesta>> = _materiasPrimas.asStateFlow()
 
+    private val _productos = MutableStateFlow<ListaUiState<ProductoRespuesta>>(ListaUiState.Cargando)
+    val productos: StateFlow<ListaUiState<ProductoRespuesta>> = _productos.asStateFlow()
+
+    // Las dos listas se piden al abrir el Almacén, así al cambiar de pestaña ya están cargadas.
     init {
-        cargar()
+        cargarMateriasPrimas()
+        cargarProductos()
     }
 
-    // Se llama al abrir la pantalla y al pulsar "Reintentar".
-    fun cargar() {
-        _materiasPrimas.value = MateriasPrimasUiState.Cargando
+    // Se llaman al abrir la pantalla y al pulsar "Reintentar" en cada pestaña.
+    fun cargarMateriasPrimas() {
+        _materiasPrimas.value = ListaUiState.Cargando
         viewModelScope.launch {
-            _materiasPrimas.value = materiaPrimaRepository.listar().fold(
-                onSuccess = { MateriasPrimasUiState.Listo(it) },
-                onFailure = { MateriasPrimasUiState.Error(mensajeDeError(it)) }
-            )
+            _materiasPrimas.value = materiaPrimaRepository.listar().aEstado()
         }
     }
+
+    fun cargarProductos() {
+        _productos.value = ListaUiState.Cargando
+        viewModelScope.launch {
+            _productos.value = productoRepository.listar().aEstado()
+        }
+    }
+
+    // Convierte el resultado del repositorio en el estado que dibuja la pantalla.
+    private fun <T> Result<List<T>>.aEstado(): ListaUiState<T> = fold(
+        onSuccess = { ListaUiState.Listo(it) },
+        onFailure = { ListaUiState.Error(mensajeDeError(it)) }
+    )
 
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val app = this[APPLICATION_KEY] as HorneoApplication
-                AlmacenViewModel(app.container.materiaPrimaRepository)
+                AlmacenViewModel(app.container.materiaPrimaRepository, app.container.productoRepository)
             }
         }
     }

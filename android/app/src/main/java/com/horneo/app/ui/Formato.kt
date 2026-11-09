@@ -12,3 +12,8 @@ private val formatoCantidad = DecimalFormat("#,##0.##", DecimalFormatSymbols(Loc
 
 fun formatearCantidad(cantidad: BigDecimal, unidad: Unidad): String =
     "${formatoCantidad.format(cantidad)} ${unidad.simbolo}"
+
+// Precios: siempre con dos decimales, como se escriben en euros (1.20 → "1,20 €", 15 → "15,00 €").
+private val formatoPrecio = DecimalFormat("#,##0.00", DecimalFormatSymbols(Locale.forLanguageTag("es-ES")))
+
+fun formatearPrecio(precio: BigDecimal): String = "${formatoPrecio.format(precio)} €"

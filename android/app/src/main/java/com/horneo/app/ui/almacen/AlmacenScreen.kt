@@ -31,8 +31,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.horneo.app.data.remote.MateriaPrimaRespuesta
-import com.horneo.app.ui.componentes.PantallaProvisional
+import com.horneo.app.data.remote.ProductoRespuesta
+import com.horneo.app.data.remote.TipoProducto
 import com.horneo.app.ui.formatearCantidad
+import com.horneo.app.ui.formatearPrecio
 
 private val pestanas = listOf("Materias primas", "Productos")
 
@@ -42,7 +44,8 @@ fun AlmacenScreen(
     modifier: Modifier = Modifier,
     viewModel: AlmacenViewModel = viewModel(factory = AlmacenViewModel.Factory)
 ) {
-    val estado by viewModel.materiasPrimas.collectAsStateWithLifecycle()
+    val materiasPrimas by viewModel.materiasPrimas.collectAsStateWithLifecycle()
+    val productos by viewModel.productos.collectAsStateWithLifecycle()
     // Pestaña elegida: estado solo visual, se conserva al girar la pantalla.
     var pestanaElegida by rememberSaveable { mutableIntStateOf(0) }
 
@@ -60,20 +63,39 @@ fun AlmacenScreen(
         }
 
         when (pestanaElegida) {
-            0 -> ListaMateriasPrimas(estado, onReintentar = viewModel::cargar)
-            else -> PantallaProvisional("Productos")
+            0 -> ContenidoLista(
+                estado = materiasPrimas,
+                textoVacio = "Todavía no hay materias primas",
+                onReintentar = viewModel::cargarMateriasPrimas,
+                clave = { it.id }
+            ) { FilaMateriaPrima(it) }
+
+            else -> ContenidoLista(
+                estado = productos,
+                textoVacio = "Todavía no hay productos",
+                onReintentar = viewModel::cargarProductos,
+                clave = { it.id }
+            ) { FilaProducto(it) }
         }
     }
 }
 
+// Dibuja cualquier lista del almacén según su estado: cargando, error, vacía o con datos.
+// Cada pestaña solo tiene que decir cómo se dibuja una fila (el parámetro fila).
 @Composable
-private fun ListaMateriasPrimas(estado: MateriasPrimasUiState, onReintentar: () -> Unit) {
+private fun <T> ContenidoLista(
+    estado: ListaUiState<T>,
+    textoVacio: String,
+    onReintentar: () -> Unit,
+    clave: (T) -> Any,
+    fila: @Composable (T) -> Unit,
+) {
     when (estado) {
-        MateriasPrimasUiState.Cargando -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        ListaUiState.Cargando -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
 
-        is MateriasPrimasUiState.Error -> Column(
+        is ListaUiState.Error -> Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(24.dp),
@@ -84,19 +106,16 @@ private fun ListaMateriasPrimas(estado: MateriasPrimasUiState, onReintentar: () 
             Button(onClick = onReintentar) { Text("Reintentar") }
         }
 
-        is MateriasPrimasUiState.Listo ->
-            if (estado.materiasPrimas.isEmpty()) {
+        is ListaUiState.Listo ->
+            if (estado.elementos.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        "Todavía no hay materias primas",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text(textoVacio, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
                 // LazyColumn solo dibuja las filas visibles en pantalla (como un RecyclerView).
                 LazyColumn(Modifier.fillMaxSize()) {
-                    items(estado.materiasPrimas, key = { it.id }) { materiaPrima ->
-                        FilaMateriaPrima(materiaPrima)
+                    items(estado.elementos, key = clave) { elemento ->
+                        fila(elemento)
                         HorizontalDivider()
                     }
                 }
@@ -116,7 +135,29 @@ private fun FilaMateriaPrima(materiaPrima: MateriaPrimaRespuesta) {
                     style = MaterialTheme.typography.titleMedium
                 )
                 if (materiaPrima.bajoMinimo) {
-                    AvisoBajoMinimo()
+                    EtiquetaAviso("Bajo mínimo")
+                }
+            }
+        }
+    )
+}
+
+// Según el boceto: tipo y precio de venta debajo del nombre, y el stock a la derecha.
+// El precio de compra no se muestra aquí; el coste irá en el detalle del producto, solo para el admin.
+@Composable
+private fun FilaProducto(producto: ProductoRespuesta) {
+    val tipo = when (producto.tipo) {
+        TipoProducto.ELABORADO -> "Elaborado"
+        TipoProducto.REVENTA -> "Reventa"
+    }
+    ListItem(
+        headlineContent = { Text(producto.nombre) },
+        supportingContent = { Text("$tipo · ${formatearPrecio(producto.precioVenta)}") },
+        trailingContent = {
+            Column(horizontalAlignment = Alignment.End) {
+                Text("${producto.stockActual} ud", style = MaterialTheme.typography.titleMedium)
+                if (producto.stockActual == 0) {
+                    EtiquetaAviso("Agotado")
                 }
             }
         }
@@ -125,14 +166,14 @@ private fun FilaMateriaPrima(materiaPrima: MateriaPrimaRespuesta) {
 
 // El aviso lleva texto además de color, para que se entienda aunque no se distinga el rojo.
 @Composable
-private fun AvisoBajoMinimo() {
+private fun EtiquetaAviso(texto: String) {
     Surface(
         color = MaterialTheme.colorScheme.errorContainer,
         contentColor = MaterialTheme.colorScheme.onErrorContainer,
         shape = RoundedCornerShape(8.dp)
     ) {
         Text(
-            "Bajo mínimo",
+            texto,
             style = MaterialTheme.typography.labelSmall,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
         )

@@ -22,4 +22,11 @@ class FormatoTest {
     fun usaComaParaLosDecimales() {
         assertEquals("1.234,56 ml", formatearCantidad(BigDecimal("1234.56"), Unidad.MILILITRO))
     }
+
+    @Test
+    fun losPreciosLlevanSiempreDosDecimales() {
+        assertEquals("1,20 €", formatearPrecio(BigDecimal("1.20")))
+        assertEquals("15,00 €", formatearPrecio(BigDecimal("15")))
+        assertEquals("1.250,50 €", formatearPrecio(BigDecimal("1250.5")))
+    }
 }
