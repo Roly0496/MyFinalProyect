@@ -1,5 +1,6 @@
 package com.horneo.app.ui.almacen
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,6 +42,9 @@ private val pestanas = listOf("Materias primas", "Productos")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlmacenScreen(
+    // La pantalla no sabe adónde se navega: solo avisa de qué fila se ha tocado.
+    // Quien la usa (PantallaPrincipal) decide qué hacer, así la pantalla no depende de la navegación.
+    onMateriaPrimaClick: (MateriaPrimaRespuesta) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AlmacenViewModel = viewModel(factory = AlmacenViewModel.Factory)
 ) {
@@ -68,7 +72,7 @@ fun AlmacenScreen(
                 textoVacio = "Todavía no hay materias primas",
                 onReintentar = viewModel::cargarMateriasPrimas,
                 clave = { it.id }
-            ) { FilaMateriaPrima(it) }
+            ) { materiaPrima -> FilaMateriaPrima(materiaPrima, onClick = { onMateriaPrimaClick(materiaPrima) }) }
 
             else -> ContenidoLista(
                 estado = productos,
@@ -124,8 +128,10 @@ private fun <T> ContenidoLista(
 }
 
 @Composable
-private fun FilaMateriaPrima(materiaPrima: MateriaPrimaRespuesta) {
+private fun FilaMateriaPrima(materiaPrima: MateriaPrimaRespuesta, onClick: () -> Unit) {
     ListItem(
+        // Toda la fila se puede tocar. onClickLabel es lo que TalkBack anuncia: «Doble toque para ver detalle».
+        modifier = Modifier.clickable(onClickLabel = "Ver detalle", onClick = onClick),
         headlineContent = { Text(materiaPrima.nombre) },
         supportingContent = { Text("Mínimo ${formatearCantidad(materiaPrima.stockMinimo, materiaPrima.unidad)}") },
         trailingContent = {

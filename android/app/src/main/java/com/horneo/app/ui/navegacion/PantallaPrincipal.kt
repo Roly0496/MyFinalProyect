@@ -17,9 +17,12 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.horneo.app.data.local.Sesion
 import com.horneo.app.ui.almacen.AlmacenScreen
+import com.horneo.app.ui.almacen.DetalleMateriaPrimaScreen
 import com.horneo.app.ui.componentes.PantallaProvisional
 import com.horneo.app.ui.inicio.InicioScreen
 
@@ -68,7 +71,23 @@ fun PantallaPrincipal(sesion: Sesion, modifier: Modifier = Modifier) {
                 .consumeWindowInsets(innerPadding)
         ) {
             composable<InicioRuta> { InicioScreen(sesion) }
-            composable<AlmacenRuta> { AlmacenScreen() }
+            navigation<AlmacenGrafo>(startDestination = AlmacenRuta) {
+                composable<AlmacenRuta> {
+                    AlmacenScreen(
+                        onMateriaPrimaClick = { materiaPrima ->
+                            navController.navigate(DetalleMateriaPrimaRuta(materiaPrima.id, materiaPrima.nombre))
+                        }
+                    )
+                }
+                composable<DetalleMateriaPrimaRuta> { entrada ->
+                    // toRoute convierte la entrada de navegación en la ruta con sus datos (id y nombre).
+                    val ruta = entrada.toRoute<DetalleMateriaPrimaRuta>()
+                    DetalleMateriaPrimaScreen(
+                        nombre = ruta.nombre,
+                        onVolver = { navController.popBackStack() }
+                    )
+                }
+            }
             composable<ProduccionRuta> { PantallaProvisional("Producción") }
             composable<VentasRuta> { PantallaProvisional("Ventas") }
         }
