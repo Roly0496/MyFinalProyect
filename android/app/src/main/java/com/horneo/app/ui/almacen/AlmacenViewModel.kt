@@ -36,22 +36,25 @@ class AlmacenViewModel(
     private val _productos = MutableStateFlow<ListaUiState<ProductoRespuesta>>(ListaUiState.Cargando)
     val productos: StateFlow<ListaUiState<ProductoRespuesta>> = _productos.asStateFlow()
 
-    // Las dos listas se piden al abrir el Almacén, así al cambiar de pestaña ya están cargadas.
-    init {
+    // No hay init: la pantalla llama a cargar() cada vez que se vuelve visible (también la primera),
+    // así el stock está al día al volver del detalle. Se piden las dos listas a la vez, para que al
+    // cambiar de pestaña ya estén cargadas.
+    fun cargar() {
         cargarMateriasPrimas()
         cargarProductos()
     }
 
-    // Se llaman al abrir la pantalla y al pulsar "Reintentar" en cada pestaña.
+    // También se llaman al pulsar "Reintentar" en cada pestaña.
+    // Si ya hay datos, se siguen mostrando mientras llegan los nuevos (sin parpadeo).
     fun cargarMateriasPrimas() {
-        _materiasPrimas.value = ListaUiState.Cargando
+        if (_materiasPrimas.value !is ListaUiState.Listo) _materiasPrimas.value = ListaUiState.Cargando
         viewModelScope.launch {
             _materiasPrimas.value = materiaPrimaRepository.listar().aEstado()
         }
     }
 
     fun cargarProductos() {
-        _productos.value = ListaUiState.Cargando
+        if (_productos.value !is ListaUiState.Listo) _productos.value = ListaUiState.Cargando
         viewModelScope.launch {
             _productos.value = productoRepository.listar().aEstado()
         }

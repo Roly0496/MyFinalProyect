@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.horneo.app.R
@@ -50,12 +51,21 @@ import com.horneo.app.ui.theme.entrada
 @Composable
 fun DetalleMateriaPrimaScreen(
     nombre: String,
+    // El ajuste es solo para el administrador: para el empleado el botón no aparece.
+    esAdmin: Boolean,
     onVolver: () -> Unit,
     onMovimiento: (TipoFormularioMovimiento) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: DetalleMateriaPrimaViewModel = viewModel(factory = DetalleMateriaPrimaViewModel.Factory),
 ) {
     val estado by viewModel.estado.collectAsStateWithLifecycle()
+
+    // Se ejecuta cada vez que la pantalla pasa a estar visible y activa (RESUMED): al abrirla
+    // y también al cerrar el formulario, así se ve el movimiento que se acaba de guardar.
+    LifecycleResumeEffect(Unit) {
+        viewModel.cargar()
+        onPauseOrDispose { }
+    }
 
     Column(modifier = modifier.fillMaxSize()) {
         TopAppBar(
@@ -85,7 +95,7 @@ fun DetalleMateriaPrimaScreen(
             }
 
             is DetalleMateriaPrimaUiState.Listo ->
-                ContenidoDetalle(estadoActual.materiaPrima, estadoActual.movimientos, onMovimiento)
+                ContenidoDetalle(estadoActual.materiaPrima, estadoActual.movimientos, esAdmin, onMovimiento)
         }
     }
 }
@@ -94,6 +104,7 @@ fun DetalleMateriaPrimaScreen(
 private fun ContenidoDetalle(
     materiaPrima: MateriaPrimaRespuesta,
     movimientos: List<MovimientoRespuesta>,
+    esAdmin: Boolean,
     onMovimiento: (TipoFormularioMovimiento) -> Unit,
 ) {
     // Una sola LazyColumn para todo: la tarjeta y el título van como elementos sueltos (item)
@@ -103,7 +114,7 @@ private fun ContenidoDetalle(
             TarjetaStock(materiaPrima, Modifier.padding(16.dp))
         }
         item {
-            BotonesMovimiento(onMovimiento, Modifier.padding(horizontal = 16.dp))
+            BotonesMovimiento(esAdmin, onMovimiento, Modifier.padding(horizontal = 16.dp))
         }
         item {
             Text(
@@ -166,7 +177,11 @@ private fun TarjetaStock(materiaPrima: MateriaPrimaRespuesta, modifier: Modifier
 // Tres botones con distinto peso visual, como en el boceto: la entrada es la acción más habitual
 // (relleno), la merma va después (tonal) y el ajuste es la menos frecuente (con borde).
 @Composable
-private fun BotonesMovimiento(onMovimiento: (TipoFormularioMovimiento) -> Unit, modifier: Modifier = Modifier) {
+private fun BotonesMovimiento(
+    esAdmin: Boolean,
+    onMovimiento: (TipoFormularioMovimiento) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Button(onClick = { onMovimiento(TipoFormularioMovimiento.ENTRADA) }, modifier = Modifier.weight(1f)) {
             Text("Entrada")
@@ -174,8 +189,12 @@ private fun BotonesMovimiento(onMovimiento: (TipoFormularioMovimiento) -> Unit, 
         FilledTonalButton(onClick = { onMovimiento(TipoFormularioMovimiento.MERMA) }, modifier = Modifier.weight(1f)) {
             Text("Merma")
         }
-        OutlinedButton(onClick = { onMovimiento(TipoFormularioMovimiento.AJUSTE) }, modifier = Modifier.weight(1f)) {
-            Text("Ajuste")
+        // Para el empleado no aparece, en lugar de salir desactivado: un botón que no se puede pulsar
+        // confunde. Aun así, el backend rechaza con un 403 cualquier ajuste que no venga de un admin.
+        if (esAdmin) {
+            OutlinedButton(onClick = { onMovimiento(TipoFormularioMovimiento.AJUSTE) }, modifier = Modifier.weight(1f)) {
+                Text("Ajuste")
+            }
         }
     }
 }

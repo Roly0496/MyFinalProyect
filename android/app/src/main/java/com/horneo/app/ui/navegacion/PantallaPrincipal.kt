@@ -21,6 +21,7 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.horneo.app.data.local.Sesion
+import com.horneo.app.data.remote.Rol
 import com.horneo.app.ui.almacen.AlmacenScreen
 import com.horneo.app.ui.almacen.DetalleMateriaPrimaScreen
 import com.horneo.app.ui.almacen.FormularioMovimientoScreen
@@ -85,6 +86,7 @@ fun PantallaPrincipal(sesion: Sesion, modifier: Modifier = Modifier) {
                     val ruta = entrada.toRoute<DetalleMateriaPrimaRuta>()
                     DetalleMateriaPrimaScreen(
                         nombre = ruta.nombre,
+                        esAdmin = sesion.rol == Rol.ADMIN,
                         onVolver = { navController.popBackStack() },
                         onMovimiento = { tipo ->
                             navController.navigate(FormularioMovimientoRuta(ruta.id, ruta.nombre, tipo))

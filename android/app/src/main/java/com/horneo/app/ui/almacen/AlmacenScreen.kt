@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.horneo.app.data.remote.MateriaPrimaRespuesta
@@ -49,6 +50,13 @@ fun AlmacenScreen(
 ) {
     val materiasPrimas by viewModel.materiasPrimas.collectAsStateWithLifecycle()
     val productos by viewModel.productos.collectAsStateWithLifecycle()
+
+    // Se ejecuta cada vez que la pantalla pasa a estar visible y activa (RESUMED): al abrirla
+    // y también al volver del detalle, así el stock está al día después de un movimiento.
+    LifecycleResumeEffect(Unit) {
+        viewModel.cargar()
+        onPauseOrDispose { }
+    }
     // Pestaña elegida: estado solo visual, se conserva al girar la pantalla.
     var pestanaElegida by rememberSaveable { mutableIntStateOf(0) }
 

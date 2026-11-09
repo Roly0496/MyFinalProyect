@@ -42,12 +42,14 @@ class DetalleMateriaPrimaViewModel(
     private val _estado = MutableStateFlow<DetalleMateriaPrimaUiState>(DetalleMateriaPrimaUiState.Cargando)
     val estado: StateFlow<DetalleMateriaPrimaUiState> = _estado.asStateFlow()
 
-    init {
-        cargar()
-    }
-
+    // No hay init: la pantalla llama a cargar() cada vez que se vuelve visible (también la primera),
+    // para que el stock y el historial estén al día al volver del formulario de movimientos.
     fun cargar() {
-        _estado.value = DetalleMateriaPrimaUiState.Cargando
+        // Si ya hay datos, se siguen mostrando mientras llegan los nuevos (sin parpadeo).
+        // El círculo de carga solo aparece la primera vez o después de un error.
+        if (_estado.value !is DetalleMateriaPrimaUiState.Listo) {
+            _estado.value = DetalleMateriaPrimaUiState.Cargando
+        }
         viewModelScope.launch {
             // async lanza las dos peticiones a la vez en lugar de una detrás de otra,
             // y await espera a que termine cada una.
