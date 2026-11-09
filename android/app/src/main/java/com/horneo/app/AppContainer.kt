@@ -6,6 +6,7 @@ import com.horneo.app.data.remote.AutenticacionInterceptor
 import com.horneo.app.data.remote.HorneoApi
 import com.horneo.app.data.repository.AuthRepository
 import com.horneo.app.data.repository.MateriaPrimaRepository
+import com.horneo.app.data.repository.ProductoRepository
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -36,4 +37,6 @@ class AppContainer(context: Context) {
     val authRepository = AuthRepository(api, sesionStore)
 
     val materiaPrimaRepository = MateriaPrimaRepository(api)
+
+    val productoRepository = ProductoRepository(api)
 }

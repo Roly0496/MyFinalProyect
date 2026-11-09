@@ -14,4 +14,7 @@ interface HorneoApi {
 
     @GET("api/materias-primas")
     suspend fun materiasPrimas(): List<MateriaPrimaRespuesta>
+
+    @GET("api/productos")
+    suspend fun productos(): List<ProductoRespuesta>
 }
