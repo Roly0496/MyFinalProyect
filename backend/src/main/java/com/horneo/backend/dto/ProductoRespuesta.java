@@ -24,4 +24,16 @@ public record ProductoRespuesta(
 				producto.getStockActual(),
 				producto.isActivo());
 	}
+
+	// Para el empleado, que no puede ver costes: el precio de compra va siempre a null.
+	public static ProductoRespuesta sinCostes(Producto producto) {
+		return new ProductoRespuesta(
+				producto.getId(),
+				producto.getNombre(),
+				producto.getTipo(),
+				producto.getPrecioVenta(),
+				null,
+				producto.getStockActual(),
+				producto.isActivo());
+	}
 }

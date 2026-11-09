@@ -10,12 +10,14 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.horneo.backend.config.AutenticacionInterceptor;
 import com.horneo.backend.config.SoloAdmin;
 import com.horneo.backend.dto.ActualizarProductoPeticion;
 import com.horneo.backend.dto.AgregarIngredientePeticion;
@@ -26,7 +28,9 @@ import com.horneo.backend.dto.IngredienteRespuesta;
 import com.horneo.backend.dto.MovimientoRespuesta;
 import com.horneo.backend.dto.ProductoRespuesta;
 import com.horneo.backend.entity.Producto;
+import com.horneo.backend.entity.Rol;
 import com.horneo.backend.entity.TipoProducto;
+import com.horneo.backend.entity.Usuario;
 import com.horneo.backend.service.MovimientoService;
 import com.horneo.backend.service.ProductoService;
 
@@ -43,18 +47,28 @@ public class ProductoController {
 	}
 
 	@GetMapping
-	public List<ProductoRespuesta> listar(@RequestParam(required = false) TipoProducto tipo) {
+	public List<ProductoRespuesta> listar(@RequestParam(required = false) TipoProducto tipo,
+			@RequestAttribute(AutenticacionInterceptor.ATRIBUTO_USUARIO) Usuario usuario) {
 		List<Producto> productos = tipo == null
 				? productoService.listarActivos()
 				: productoService.listarActivosPorTipo(tipo);
 		return productos.stream()
-				.map(ProductoRespuesta::de)
+				.map(producto -> responder(producto, usuario))
 				.toList();
 	}
 
 	@GetMapping("/{id}")
-	public ProductoRespuesta obtener(@PathVariable Long id) {
-		return ProductoRespuesta.de(productoService.obtener(id));
+	public ProductoRespuesta obtener(@PathVariable Long id,
+			@RequestAttribute(AutenticacionInterceptor.ATRIBUTO_USUARIO) Usuario usuario) {
+		return responder(productoService.obtener(id), usuario);
+	}
+
+	// Los endpoints que ven los dos roles pasan por aquí: solo el administrador recibe el precio de compra.
+	// Crear y actualizar no lo necesitan porque son @SoloAdmin.
+	private ProductoRespuesta responder(Producto producto, Usuario usuario) {
+		return usuario.getRol() == Rol.ADMIN
+				? ProductoRespuesta.de(producto)
+				: ProductoRespuesta.sinCostes(producto);
 	}
 
 	@PostMapping
