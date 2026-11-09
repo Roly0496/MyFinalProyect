@@ -674,3 +674,71 @@ Sirve como base para redactar la memoria.
 - Pantallas de cada pestaña siguiendo los bocetos: Almacén (materias primas y productos), Inicio
   definitivo, Producción y Ventas.
 - Menú de cuenta (contraseña, cerrar sesión, usuarios para el administrador).
+
+## 09/11/2026
+
+### Almacén: datos de las materias primas
+- Primera pantalla que pide datos reales al backend: `GET /api/materias-primas`. Sigue el mismo
+  camino que el login: `HorneoApi` (Retrofit) → `MateriaPrimaRepository` (devuelve un `Result`) →
+  `ViewModel` → pantalla. El repositorio se crea una sola vez en `AppContainer`.
+- `MateriaPrimaDtos.kt`: el modelo `MateriaPrimaRespuesta` con los mismos campos que el JSON del
+  backend, y la `enum class Unidad` (`GRAMO`, `MILILITRO`, `UNIDAD`) con el símbolo que se muestra
+  (g, ml, ud).
+- **Problema: los decimales.** kotlinx.serialization no sabe leer `BigDecimal`, y leer las
+  cantidades como `Double` no es exacto (por ejemplo, 0,1 + 0,2 da 0,30000000000000004). En una
+  aplicación que maneja stock y dinero eso no vale, y el backend ya usa `BigDecimal` por la misma
+  razón.
+- Solución: `data/remote/BigDecimalSerializer`, un serializador propio que lee el número tal y como
+  viene escrito en el JSON (el texto `"12500.00"`) y crea el `BigDecimal` directamente, sin pasar
+  nunca por `Double`. Al enviar, escribe el número sin comillas, que es lo que espera el backend.
+- Pruebas unitarias (`MateriaPrimaDtosTest`, 4 pruebas): lee una materia prima de un JSON de
+  ejemplo, conserva los decimales exactos, suma sin errores de redondeo y escribe el número sin
+  comillas. Se ejecutan en el ordenador, sin emulador (`./gradlew testDebugUnitTest`).
+
+### Almacén: lista de materias primas
+- `AlmacenViewModel` expone el estado de la lista como un `StateFlow` de una `sealed interface`
+  con tres casos: `Cargando`, `Error(mensaje)` y `Listo(lista)`. Así la pantalla está obligada a
+  tratar los tres, y no puede quedarse en un estado a medias (por ejemplo, «cargando» y con error a
+  la vez).
+- `AlmacenScreen` sigue el boceto: barra superior «Almacén» y dos pestañas, Materias primas y
+  Productos (`PrimaryTabRow`). La pestaña elegida se guarda con `rememberSaveable`, porque es solo
+  visual (igual que el botón de la contraseña). Productos sigue siendo provisional.
+- Cada estado tiene su pantalla: un indicador circular mientras carga, el mensaje de error con un
+  botón **Reintentar**, un texto si la lista está vacía y, si hay datos, una `LazyColumn` (solo
+  dibuja las filas que se ven, como el `RecyclerView` de las vistas clásicas).
+- Cada fila (`ListItem`) muestra el nombre, el stock mínimo y, a la derecha, el stock actual.
+- **Aviso de bajo mínimo:** el backend ya envía el campo `bajoMinimo`, así que la regla está en un
+  solo sitio. La app solo lo muestra, con una etiqueta en los colores `errorContainer` /
+  `onErrorContainer` del tema. Accesibilidad: la etiqueta lleva el texto «Bajo mínimo» además del
+  color, para que se entienda aunque no se distinga el rojo.
+- **Formato de las cantidades:** `ui/Formato.kt`, función `formatearCantidad`. Usa el formato
+  español (punto para los miles, coma para los decimales) y quita los ceros sobrantes: 12500.00 se
+  muestra como «12.500 g» y 0.10 como «0,1 g». Tiene sus pruebas unitarias (`FormatoTest`, 3 pruebas).
+- Problema encontrado: la barra superior del Almacén dejaba un hueco de más arriba, porque volvía a
+  reservar el espacio de la barra de estado que el `Scaffold` de `PantallaPrincipal` ya había
+  reservado. Solución: `consumeWindowInsets(innerPadding)` en el `NavHost`, que avisa a las
+  pantallas de dentro de que ese espacio ya está cubierto.
+
+### Datos de ejemplo
+- `backend/datos-ejemplo.sql`: datos de una panadería de ejemplo para el desarrollo y para la demo
+  de la defensa. No es una migración de Flyway: se ejecuta a mano, una sola vez, con
+  `mysql -u horneo -p horneo < datos-ejemplo.sql`.
+- Contenido: 8 materias primas (Mantequilla y Huevos por debajo del mínimo, para que se vea el
+  aviso), 6 productos (4 elaborados con su receta y 2 de reventa; la Ensaimada con stock 0) y los
+  movimientos de «Inventario inicial».
+- Se respeta la regla del proyecto de que el stock solo cambia mediante movimientos: cada stock
+  inicial tiene su movimiento (`ENTRADA` para materias primas y reventa, `AJUSTE` para elaborados),
+  para que el stock y el historial cuadren.
+- Todo va dentro de una transacción (`START TRANSACTION` … `COMMIT`): si una sentencia falla, no se
+  guarda nada a medias.
+- Problema encontrado: la consola de base de datos de IntelliJ necesita la edición Ultimate, que es
+  de pago. Se ejecutó desde la terminal con el cliente `mysql`, que además deshace la transacción
+  automáticamente si algo falla.
+- Probado en el emulador desde Android Studio: aparecen las 8 materias primas con su stock y su
+  unidad, Mantequilla y Huevos con el aviso, y las cantidades con el formato español.
+
+### Pendiente
+- Lista de productos (segunda pestaña del Almacén).
+- Detalle de cada materia prima y producto, con sus movimientos (entrada, merma y ajuste).
+- Inicio definitivo, Producción y Ventas.
+- Menú de cuenta (contraseña, cerrar sesión, usuarios para el administrador).
