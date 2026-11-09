@@ -1,8 +1,10 @@
 package com.horneo.app.data.repository
 
 import com.horneo.app.data.remote.AjusteMateriaPrimaPeticion
+import com.horneo.app.data.remote.AjusteProductoPeticion
 import com.horneo.app.data.remote.HorneoApi
 import com.horneo.app.data.remote.MovimientoMateriaPrimaPeticion
+import com.horneo.app.data.remote.MovimientoProductoPeticion
 import com.horneo.app.data.remote.MovimientoRespuesta
 import java.math.BigDecimal
 
@@ -33,5 +35,30 @@ class MovimientoRepository(private val api: HorneoApi) {
         motivo: String,
     ): Result<MovimientoRespuesta> = runCatching {
         api.ajusteMateriaPrima(AjusteMateriaPrimaPeticion(materiaPrimaId, stockReal, motivo))
+    }
+
+    // Solo productos de reventa: los elaborados suben su stock con una producción.
+    suspend fun registrarEntradaProducto(
+        productoId: Long,
+        cantidad: Int,
+        motivo: String?,
+    ): Result<MovimientoRespuesta> = runCatching {
+        api.entradaProducto(MovimientoProductoPeticion(productoId, cantidad, motivo))
+    }
+
+    suspend fun registrarMermaProducto(
+        productoId: Long,
+        cantidad: Int,
+        motivo: String,
+    ): Result<MovimientoRespuesta> = runCatching {
+        api.mermaProducto(MovimientoProductoPeticion(productoId, cantidad, motivo))
+    }
+
+    suspend fun ajustarStockProducto(
+        productoId: Long,
+        stockReal: Int,
+        motivo: String,
+    ): Result<MovimientoRespuesta> = runCatching {
+        api.ajusteProducto(AjusteProductoPeticion(productoId, stockReal, motivo))
     }
 }

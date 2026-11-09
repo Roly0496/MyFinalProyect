@@ -54,3 +54,20 @@ data class AjusteMateriaPrimaPeticion(
     @Serializable(with = BigDecimalSerializer::class) val stockReal: BigDecimal,
     val motivo: String,
 )
+
+// Peticiones de movimientos de productos (MovimientoProductoPeticion y AjusteProductoPeticion en el
+// backend). Igual que las de materias primas, pero con cantidades enteras: los productos se cuentan
+// por unidades. La entrada solo vale para productos de reventa (los elaborados suben con una producción).
+@Serializable
+data class MovimientoProductoPeticion(
+    val productoId: Long,
+    val cantidad: Int,
+    val motivo: String?,
+)
+
+@Serializable
+data class AjusteProductoPeticion(
+    val productoId: Long,
+    val stockReal: Int,
+    val motivo: String,
+)

@@ -26,6 +26,19 @@ interface HorneoApi {
     @GET("api/productos")
     suspend fun productos(): List<ProductoRespuesta>
 
+    @GET("api/productos/{id}")
+    suspend fun producto(@Path("id") id: Long): ProductoRespuesta
+
+    @GET("api/productos/{id}/receta")
+    suspend fun recetaDeProducto(@Path("id") id: Long): List<IngredienteRespuesta>
+
+    // Solo administrador: el backend responde 403 si lo pide un empleado.
+    @GET("api/productos/{id}/coste")
+    suspend fun costeDeProducto(@Path("id") id: Long): CosteRespuesta
+
+    @GET("api/productos/{id}/movimientos")
+    suspend fun movimientosDeProducto(@Path("id") id: Long): List<MovimientoRespuesta>
+
     // Movimientos de materias primas. Los tres devuelven el movimiento creado (201 Created).
     @POST("api/movimientos/entradas/materias-primas")
     suspend fun entradaMateriaPrima(@Body peticion: MovimientoMateriaPrimaPeticion): MovimientoRespuesta
@@ -36,4 +49,15 @@ interface HorneoApi {
     // Solo administrador: el backend responde 403 si lo intenta un empleado.
     @POST("api/movimientos/ajustes/materias-primas")
     suspend fun ajusteMateriaPrima(@Body peticion: AjusteMateriaPrimaPeticion): MovimientoRespuesta
+
+    // Movimientos de productos. La entrada solo vale para productos de reventa.
+    @POST("api/movimientos/entradas/productos")
+    suspend fun entradaProducto(@Body peticion: MovimientoProductoPeticion): MovimientoRespuesta
+
+    @POST("api/movimientos/mermas/productos")
+    suspend fun mermaProducto(@Body peticion: MovimientoProductoPeticion): MovimientoRespuesta
+
+    // Solo administrador.
+    @POST("api/movimientos/ajustes/productos")
+    suspend fun ajusteProducto(@Body peticion: AjusteProductoPeticion): MovimientoRespuesta
 }

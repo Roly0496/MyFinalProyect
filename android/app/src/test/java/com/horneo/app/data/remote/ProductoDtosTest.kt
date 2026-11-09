@@ -38,4 +38,23 @@ class ProductoDtosTest {
         assertEquals(TipoProducto.REVENTA, producto.tipo)
         assertEquals("0.95", producto.precioCompra?.toPlainString())
     }
+
+    @Test
+    fun leeUnIngredienteDeLaRecetaConSuUnidad() {
+        // JSON con la misma forma que devuelve GET /api/productos/{id}/receta
+        val ingrediente = json.decodeFromString<IngredienteRespuesta>(
+            """{"id":7,"materiaPrimaId":2,"materiaPrimaNombre":"Mantequilla","unidad":"GRAMO","cantidad":25.00}"""
+        )
+
+        assertEquals("Mantequilla", ingrediente.materiaPrimaNombre)
+        assertEquals(Unidad.GRAMO, ingrediente.unidad)
+        assertEquals("25.00", ingrediente.cantidad.toPlainString())
+    }
+
+    @Test
+    fun leeElCosteSinPerderDecimales() {
+        val coste = json.decodeFromString<CosteRespuesta>("""{"productoId":1,"coste":0.32}""")
+
+        assertEquals("0.32", coste.coste.toPlainString())
+    }
 }

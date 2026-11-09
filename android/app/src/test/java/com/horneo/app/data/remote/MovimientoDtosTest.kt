@@ -67,4 +67,17 @@ class MovimientoDtosTest {
             json.encodeToString(peticion)
         )
     }
+
+    @Test
+    fun lasPeticionesDeProductosLlevanCantidadesEnteras() {
+        // Sin decimales: el backend espera un Integer para los productos
+        assertEquals(
+            """{"productoId":5,"cantidad":12,"motivo":null}""",
+            json.encodeToString(MovimientoProductoPeticion(5, 12, null))
+        )
+        assertEquals(
+            """{"productoId":5,"stockReal":0,"motivo":"Recuento"}""",
+            json.encodeToString(AjusteProductoPeticion(5, 0, "Recuento"))
+        )
+    }
 }

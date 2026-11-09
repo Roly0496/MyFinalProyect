@@ -24,3 +24,22 @@ data class ProductoRespuesta(
     val stockActual: Int,
     val activo: Boolean,
 )
+
+// Un ingrediente de la receta (IngredienteRespuesta en el backend): cuánta materia prima hace falta
+// para fabricar UNA unidad del producto. Trae la unidad para poder mostrar "50 g" sin otra petición.
+@Serializable
+data class IngredienteRespuesta(
+    val id: Long,
+    val materiaPrimaId: Long,
+    val materiaPrimaNombre: String,
+    val unidad: Unidad,
+    @Serializable(with = BigDecimalSerializer::class) val cantidad: BigDecimal,
+)
+
+// Coste de una unidad del producto (solo administrador). En los elaborados lo calcula el backend con
+// la receta y los precios de las materias primas; en los de reventa es su precio de compra.
+@Serializable
+data class CosteRespuesta(
+    val productoId: Long,
+    @Serializable(with = BigDecimalSerializer::class) val coste: BigDecimal,
+)
