@@ -13,11 +13,9 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -106,7 +104,13 @@ private fun ContenidoDetalle(
             TarjetaStock(materiaPrima, Modifier.padding(16.dp))
         }
         item {
-            BotonesMovimiento(esAdmin, onMovimiento, Modifier.padding(horizontal = 16.dp))
+            // En materias primas la entrada está siempre disponible; el ajuste, solo para el administrador.
+            BotonesMovimiento(
+                mostrarEntrada = true,
+                mostrarAjuste = esAdmin,
+                onMovimiento = onMovimiento,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
         }
         seccionHistorial(movimientos, materiaPrima.unidad)
     }
@@ -142,31 +146,6 @@ private fun TarjetaStock(materiaPrima: MateriaPrimaRespuesta, modifier: Modifier
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-        }
-    }
-}
-
-// Tres botones con distinto peso visual, como en el boceto: la entrada es la acción más habitual
-// (relleno), la merma va después (tonal) y el ajuste es la menos frecuente (con borde).
-@Composable
-private fun BotonesMovimiento(
-    esAdmin: Boolean,
-    onMovimiento: (TipoFormularioMovimiento) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Button(onClick = { onMovimiento(TipoFormularioMovimiento.ENTRADA) }, modifier = Modifier.weight(1f)) {
-            Text("Entrada")
-        }
-        FilledTonalButton(onClick = { onMovimiento(TipoFormularioMovimiento.MERMA) }, modifier = Modifier.weight(1f)) {
-            Text("Merma")
-        }
-        // Para el empleado no aparece, en lugar de salir desactivado: un botón que no se puede pulsar
-        // confunde. Aun así, el backend rechaza con un 403 cualquier ajuste que no venga de un admin.
-        if (esAdmin) {
-            OutlinedButton(onClick = { onMovimiento(TipoFormularioMovimiento.AJUSTE) }, modifier = Modifier.weight(1f)) {
-                Text("Ajuste")
-            }
         }
     }
 }

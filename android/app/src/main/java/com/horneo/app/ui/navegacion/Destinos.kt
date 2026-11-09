@@ -2,6 +2,7 @@ package com.horneo.app.ui.navegacion
 
 import androidx.annotation.DrawableRes
 import com.horneo.app.R
+import com.horneo.app.ui.almacen.ElementoMovimiento
 import com.horneo.app.ui.almacen.TipoFormularioMovimiento
 import kotlinx.serialization.Serializable
 
@@ -27,9 +28,15 @@ data class DetalleMateriaPrimaRuta(val id: Long, val nombre: String)
 @Serializable
 data class DetalleProductoRuta(val id: Long, val nombre: String)
 
-// El mismo formulario sirve para entrada, merma y ajuste: el tipo viaja en la ruta.
+// El mismo formulario sirve para entrada, merma y ajuste, de materias primas y de productos:
+// el tipo y el elemento viajan en la ruta.
 @Serializable
-data class FormularioMovimientoRuta(val id: Long, val nombre: String, val tipo: TipoFormularioMovimiento)
+data class FormularioMovimientoRuta(
+    val id: Long,
+    val nombre: String,
+    val tipo: TipoFormularioMovimiento,
+    val elemento: ElementoMovimiento,
+)
 
 @Serializable
 data object ProduccionRuta

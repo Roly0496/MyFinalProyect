@@ -25,6 +25,7 @@ import com.horneo.app.data.remote.Rol
 import com.horneo.app.ui.almacen.AlmacenScreen
 import com.horneo.app.ui.almacen.DetalleMateriaPrimaScreen
 import com.horneo.app.ui.almacen.DetalleProductoScreen
+import com.horneo.app.ui.almacen.ElementoMovimiento
 import com.horneo.app.ui.almacen.FormularioMovimientoScreen
 import com.horneo.app.ui.componentes.PantallaProvisional
 import com.horneo.app.ui.inicio.InicioScreen
@@ -93,7 +94,9 @@ fun PantallaPrincipal(sesion: Sesion, modifier: Modifier = Modifier) {
                         esAdmin = sesion.rol == Rol.ADMIN,
                         onVolver = { navController.popBackStack() },
                         onMovimiento = { tipo ->
-                            navController.navigate(FormularioMovimientoRuta(ruta.id, ruta.nombre, tipo))
+                            navController.navigate(
+                                FormularioMovimientoRuta(ruta.id, ruta.nombre, tipo, ElementoMovimiento.MATERIA_PRIMA)
+                            )
                         }
                     )
                 }
@@ -102,7 +105,12 @@ fun PantallaPrincipal(sesion: Sesion, modifier: Modifier = Modifier) {
                     DetalleProductoScreen(
                         nombre = ruta.nombre,
                         esAdmin = sesion.rol == Rol.ADMIN,
-                        onVolver = { navController.popBackStack() }
+                        onVolver = { navController.popBackStack() },
+                        onMovimiento = { tipo ->
+                            navController.navigate(
+                                FormularioMovimientoRuta(ruta.id, ruta.nombre, tipo, ElementoMovimiento.PRODUCTO)
+                            )
+                        }
                     )
                 }
                 composable<FormularioMovimientoRuta> { entrada ->

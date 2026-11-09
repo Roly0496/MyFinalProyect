@@ -35,11 +35,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.horneo.app.R
-import com.horneo.app.data.remote.MateriaPrimaRespuesta
 import com.horneo.app.ui.formatearCantidad
 
-// Formulario de entrada, merma o ajuste de una materia prima (boceto 05).
-// La misma pantalla sirve para los tres: los textos y las reglas cambian según el tipo.
+// Formulario de entrada, merma o ajuste de una materia prima o de un producto (boceto 05).
+// La misma pantalla sirve para todos: los textos y las reglas cambian según el tipo y el elemento.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FormularioMovimientoScreen(
@@ -68,7 +67,7 @@ fun FormularioMovimientoScreen(
             }
         )
 
-        val materiaPrima = estado.materiaPrima
+        val stock = estado.stock
         when {
             estado.errorCarga != null -> Column(
                 modifier = Modifier
@@ -81,13 +80,14 @@ fun FormularioMovimientoScreen(
                 Button(onClick = viewModel::cargar) { Text("Reintentar") }
             }
 
-            materiaPrima == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            stock == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
 
             else -> CamposFormulario(
                 tipo = tipo,
-                materiaPrima = materiaPrima,
+                stock = stock,
+                soloEnteros = viewModel.soloEnteros,
                 estado = estado,
                 onCantidad = viewModel::cambiarCantidad,
                 onMotivo = viewModel::cambiarMotivo,
@@ -100,13 +100,14 @@ fun FormularioMovimientoScreen(
 @Composable
 private fun CamposFormulario(
     tipo: TipoFormularioMovimiento,
-    materiaPrima: MateriaPrimaRespuesta,
+    stock: StockElemento,
+    soloEnteros: Boolean,
     estado: FormularioMovimientoUiState,
     onCantidad: (String) -> Unit,
     onMotivo: (String) -> Unit,
     onGuardar: () -> Unit,
 ) {
-    val unidad = materiaPrima.unidad
+    val unidad = stock.unidad
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -117,7 +118,7 @@ private fun CamposFormulario(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            "Stock actual: ${formatearCantidad(materiaPrima.stockActual, unidad)}",
+            "Stock actual: ${formatearCantidad(stock.stockActual, unidad)}",
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
@@ -131,8 +132,11 @@ private fun CamposFormulario(
             isError = estado.errorCantidad != null,
             // Debajo del campo: el error si lo hay (dice cómo arreglarlo) o, si no, la ayuda.
             supportingText = { Text(estado.errorCantidad ?: tipo.ayudaCantidad) },
-            // Teclado numérico con separador decimal.
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
+            // Teclado numérico: con separador decimal, salvo en los productos (solo unidades enteras).
+            keyboardOptions = KeyboardOptions(
+                keyboardType = if (soloEnteros) KeyboardType.Number else KeyboardType.Decimal,
+                imeAction = ImeAction.Next
+            ),
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -147,7 +151,7 @@ private fun CamposFormulario(
         )
 
         // Vista previa: solo si lo escrito ya es un número válido.
-        val validacion = validarMovimiento(tipo, estado.cantidad, estado.motivo, materiaPrima.stockActual, unidad)
+        val validacion = validarMovimiento(tipo, estado.cantidad, estado.motivo, stock.stockActual, unidad, soloEnteros)
         validacion.cantidad?.let { cantidad ->
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                 Column(Modifier.padding(16.dp).fillMaxWidth()) {
@@ -157,7 +161,7 @@ private fun CamposFormulario(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        formatearCantidad(stockDespues(tipo, cantidad, materiaPrima.stockActual), unidad),
+                        formatearCantidad(stockDespues(tipo, cantidad, stock.stockActual), unidad),
                         style = MaterialTheme.typography.titleLarge
                     )
                 }

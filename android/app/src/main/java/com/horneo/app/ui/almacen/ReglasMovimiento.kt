@@ -23,6 +23,11 @@ enum class TipoFormularioMovimiento(
     AJUSTE("Ajuste", "Stock real contado", "El stock pasará a ser esta cantidad.", true, "Guardar ajuste"),
 }
 
+// A qué se aplica el movimiento. El formulario es el mismo; cambian la dirección a la que se envía
+// y que los productos se cuentan por unidades enteras.
+@Serializable
+enum class ElementoMovimiento { MATERIA_PRIMA, PRODUCTO }
+
 // Lee un número escrito por el usuario. Acepta coma o punto como separador decimal, porque en España
 // se escribe con coma pero algunos teclados solo muestran el punto. Devuelve null si no es un número.
 // No acepta signos ni separador de miles: "1.000" se lee como 1,000 (tres decimales) y lo rechaza
@@ -49,13 +54,19 @@ fun validarMovimiento(
     motivo: String,
     stockActual: BigDecimal,
     unidad: Unidad,
+    // Los productos se cuentan por unidades enteras: no se puede perder medio croissant.
+    soloEnteros: Boolean = false,
 ): ResultadoValidacion {
     val cantidad = leerCantidad(textoCantidad)
     val errorCantidad = when {
         textoCantidad.isBlank() -> "Escribe la cantidad"
-        cantidad == null -> "Escribe solo números, por ejemplo 1,5"
+        cantidad == null -> if (soloEnteros) "Escribe solo números, por ejemplo 12" else "Escribe solo números, por ejemplo 1,5"
+        // Va antes que la regla de los dos decimales para que "1.000" también dé este mensaje.
+        soloEnteros && cantidad.scale() > 0 -> "Solo unidades enteras, sin decimales"
         // En la base de datos las cantidades tienen dos decimales.
         cantidad.scale() > 2 -> "Como mucho dos decimales"
+        // El backend guarda el stock de los productos en un INT.
+        soloEnteros && cantidad > BigDecimal(Int.MAX_VALUE) -> "La cantidad es demasiado grande"
         tipo != TipoFormularioMovimiento.AJUSTE && cantidad.signum() == 0 -> "La cantidad debe ser mayor que 0"
         // El stock nunca puede quedar en negativo.
         tipo == TipoFormularioMovimiento.MERMA && cantidad > stockActual ->

@@ -78,6 +78,27 @@ class ReglasMovimientoTest {
     }
 
     @Test
+    fun losProductosSoloAdmitenUnidadesEnteras() {
+        val stockProducto = BigDecimal(24)
+        fun validarProducto(cantidad: String) =
+            validarMovimiento(MERMA, cantidad, "Caídos", stockProducto, Unidad.UNIDAD, soloEnteros = true)
+
+        assertTrue(validarProducto("3").esValido)
+        assertEquals("Solo unidades enteras, sin decimales", validarProducto("1,5").errorCantidad)
+        // También "1.000": no se guarda como 1
+        assertEquals("Solo unidades enteras, sin decimales", validarProducto("1.000").errorCantidad)
+        assertEquals("No puede ser mayor que el stock actual (24 ud)", validarProducto("30").errorCantidad)
+    }
+
+    @Test
+    fun lasMateriasPrimasEnUnidadesSiAdmitenDecimales() {
+        // Los huevos se cuentan en "ud", pero una receta puede usar 0,1 ud: no es lo mismo que un producto
+        val resultado = validarMovimiento(MERMA, "0,5", "Roto", BigDecimal(10), Unidad.UNIDAD)
+
+        assertTrue(resultado.esValido)
+    }
+
+    @Test
     fun calculaComoQuedaraElStock() {
         assertEquals(BigDecimal("1850.00"), stockDespues(ENTRADA, BigDecimal("1000"), stock))
         assertEquals(BigDecimal("700.00"), stockDespues(MERMA, BigDecimal("150"), stock))

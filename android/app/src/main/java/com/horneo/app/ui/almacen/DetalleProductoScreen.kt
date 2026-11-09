@@ -43,13 +43,14 @@ import com.horneo.app.ui.formatearPrecio
 import java.math.BigDecimal
 
 // Detalle de un producto (boceto 06): tarjeta con precio y stock, coste y margen (solo administrador),
-// receta por unidad (solo elaborados) e historial de movimientos.
+// receta por unidad (solo elaborados), botones de movimientos e historial.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetalleProductoScreen(
     nombre: String,
     esAdmin: Boolean,
     onVolver: () -> Unit,
+    onMovimiento: (TipoFormularioMovimiento) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: DetalleProductoViewModel = viewModel(factory = DetalleProductoViewModel.factory(esAdmin)),
 ) {
@@ -90,6 +91,16 @@ fun DetalleProductoScreen(
             is DetalleProductoUiState.Listo -> LazyColumn(Modifier.fillMaxSize()) {
                 item {
                     TarjetaProducto(estadoActual.producto, estadoActual.coste, Modifier.padding(16.dp))
+                }
+                item {
+                    // La entrada solo existe para los productos de reventa (se compran hechos);
+                    // los elaborados suben su stock con una producción.
+                    BotonesMovimiento(
+                        mostrarEntrada = estadoActual.producto.tipo == TipoProducto.REVENTA,
+                        mostrarAjuste = esAdmin,
+                        onMovimiento = onMovimiento,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
                 }
                 // Solo los elaborados tienen receta; los de reventa se compran ya hechos.
                 if (estadoActual.producto.tipo == TipoProducto.ELABORADO) {
