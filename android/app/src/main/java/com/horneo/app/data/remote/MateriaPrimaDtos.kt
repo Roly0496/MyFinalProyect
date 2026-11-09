@@ -19,7 +19,8 @@ data class MateriaPrimaRespuesta(
     val unidad: Unidad,
     @Serializable(with = BigDecimalSerializer::class) val stockActual: BigDecimal,
     @Serializable(with = BigDecimalSerializer::class) val stockMinimo: BigDecimal,
-    @Serializable(with = BigDecimalSerializer::class) val precioUnitario: BigDecimal,
+    // Solo llega al administrador; para el empleado viene a null, porque no puede ver costes.
+    @Serializable(with = BigDecimalSerializer::class) val precioUnitario: BigDecimal?,
     val activo: Boolean,
     val bajoMinimo: Boolean,
 )

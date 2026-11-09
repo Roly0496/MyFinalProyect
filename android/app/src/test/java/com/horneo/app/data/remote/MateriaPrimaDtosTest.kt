@@ -2,6 +2,7 @@ package com.horneo.app.data.remote
 
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.math.BigDecimal
@@ -32,7 +33,18 @@ class MateriaPrimaDtosTest {
 
         // Se compara el texto para comprobar también la escala (850.00, no 850 ni 850.0)
         assertEquals("850.00", materiaPrima.stockActual.toPlainString())
-        assertEquals("0.01", materiaPrima.precioUnitario.toPlainString())
+        assertEquals("0.01", materiaPrima.precioUnitario?.toPlainString())
+    }
+
+    @Test
+    fun leeLaRespuestaDelEmpleadoSinPrecio() {
+        // Para el empleado, el backend manda el precio unitario a null
+        val sinPrecio = respuesta.replace("\"precioUnitario\":0.01", "\"precioUnitario\":null")
+
+        val materiaPrima = json.decodeFromString<MateriaPrimaRespuesta>(sinPrecio)
+
+        assertNull(materiaPrima.precioUnitario)
+        assertEquals("850.00", materiaPrima.stockActual.toPlainString())
     }
 
     @Test

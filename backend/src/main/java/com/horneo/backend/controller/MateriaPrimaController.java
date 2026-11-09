@@ -10,16 +10,21 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.horneo.backend.config.AutenticacionInterceptor;
 import com.horneo.backend.config.SoloAdmin;
 import com.horneo.backend.dto.ActualizarMateriaPrimaPeticion;
 import com.horneo.backend.dto.CrearMateriaPrimaPeticion;
 import com.horneo.backend.dto.MateriaPrimaRespuesta;
 import com.horneo.backend.dto.MovimientoRespuesta;
+import com.horneo.backend.entity.MateriaPrima;
+import com.horneo.backend.entity.Rol;
+import com.horneo.backend.entity.Usuario;
 import com.horneo.backend.service.MateriaPrimaService;
 import com.horneo.backend.service.MovimientoService;
 
@@ -36,15 +41,25 @@ public class MateriaPrimaController {
 	}
 
 	@GetMapping
-	public List<MateriaPrimaRespuesta> listar() {
+	public List<MateriaPrimaRespuesta> listar(
+			@RequestAttribute(AutenticacionInterceptor.ATRIBUTO_USUARIO) Usuario usuario) {
 		return materiaPrimaService.listarActivas().stream()
-				.map(MateriaPrimaRespuesta::de)
+				.map(materiaPrima -> responder(materiaPrima, usuario))
 				.toList();
 	}
 
 	@GetMapping("/{id}")
-	public MateriaPrimaRespuesta obtener(@PathVariable Long id) {
-		return MateriaPrimaRespuesta.de(materiaPrimaService.obtener(id));
+	public MateriaPrimaRespuesta obtener(@PathVariable Long id,
+			@RequestAttribute(AutenticacionInterceptor.ATRIBUTO_USUARIO) Usuario usuario) {
+		return responder(materiaPrimaService.obtener(id), usuario);
+	}
+
+	// Los endpoints que ven los dos roles pasan por aquí: solo el administrador recibe el precio unitario.
+	// Crear y actualizar no lo necesitan porque son @SoloAdmin.
+	private MateriaPrimaRespuesta responder(MateriaPrima materiaPrima, Usuario usuario) {
+		return usuario.getRol() == Rol.ADMIN
+				? MateriaPrimaRespuesta.de(materiaPrima)
+				: MateriaPrimaRespuesta.sinCostes(materiaPrima);
 	}
 
 	@PostMapping
