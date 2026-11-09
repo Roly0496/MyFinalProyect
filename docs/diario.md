@@ -815,11 +815,105 @@ Sirve como base para redactar la memoria.
   Como ese commit aún no estaba subido, se completó con `git commit --amend --no-edit`.
   Desde entonces se añade cada archivo con su propio `git add` y se revisa `git status` antes de
   cada commit. `--amend` solo se usa con commits que no se han subido a GitHub.
-- Mensajes de commit: `feat:` para funcionalidades nuevas y `fix:` para correcciones (los dos
-  arreglos de costes).
+- Mensajes de commit: `feat:` para funcionalidades nuevas, `fix:` para correcciones (los dos
+  arreglos de costes) y `build:` para cambios de configuración de la compilación (`minSdk`).
+
+### Detalle de materia prima: plan
+- Siguiendo el boceto 04, se hizo en cuatro pasos con un commit cada uno: capa de datos,
+  navegación, pantalla de detalle y formularios de movimientos.
+
+### Detalle de materia prima: capa de datos
+- `MovimientoDtos.kt`: `enum class TipoMovimiento` (ENTRADA, PRODUCCION, VENTA, MERMA, AJUSTE) y
+  `MovimientoRespuesta`. Varios campos son opcionales (`?`): un movimiento es de una materia prima o
+  de un producto, el motivo solo existe en mermas y ajustes, y `produccionId` / `ventaId` solo si el
+  movimiento viene de una producción o de una venta.
+- `HorneoApi`: `GET /api/materias-primas/{id}` y `GET /api/materias-primas/{id}/movimientos`.
+  `@Path("id")` sustituye el `{id}` de la URL por el valor del parámetro.
+- **Problema encontrado: las fechas y la versión mínima de Android.** Para manejar fechas lo normal
+  es `java.time` (`LocalDateTime`), pero solo existe desde Android 8.0 (API 26) y la app tenía
+  `minSdk 24` (Android 7.0). En un móvil con Android 7 la app se habría cerrado al mostrar el
+  historial. Opciones:
+  - A. Subir `minSdk` a 26.
+  - B. Activar el *desugaring* de Java, que añade `java.time` a versiones antiguas (más
+    configuración y una dependencia más).
+  - C. Tratar la fecha como texto (frágil).
+- Decisión: **A**. Android 7 tiene casi diez años y prácticamente ningún móvil en uso lo lleva.
+  Se hizo en un commit aparte (`build:`).
+- `LocalDateTimeSerializer`: misma idea que `BigDecimalSerializer`. El backend envía las fechas
+  como texto ISO 8601 (`"2026-11-09T09:39:35.123456"`) y `LocalDateTime` lo lee directamente.
+- Pruebas (`MovimientoDtosTest`): una merma con su fecha y su cantidad negativa, y una fecha sin
+  fracciones de segundo (Spring Boot no las escribe cuando los segundos son exactos).
+
+### Detalle de materia prima: navegación
+- El Almacén pasa a ser un subgrafo de navegación (`AlmacenGrafo`) con la lista, el detalle y el
+  formulario. La pestaña apunta al subgrafo, así sigue marcada en cualquiera de esas pantallas.
+- Primera ruta con datos: `DetalleMateriaPrimaRuta(id, nombre)`, una `data class` en lugar de un
+  `data object`. Lleva el id para pedir los datos y el nombre para que el título se vea al instante.
+- `AlmacenScreen` recibe `onMateriaPrimaClick` y no sabe adónde se navega: solo avisa de qué fila se
+  ha tocado y decide `PantallaPrincipal`. Así la pantalla no depende de la navegación.
+- Accesibilidad: las filas son `clickable` con `onClickLabel = "Ver detalle"` (lo anuncia TalkBack)
+  y la flecha de volver lleva `contentDescription = "Volver"`.
+- Nuevo icono `ic_arrow_back` (Material Symbols, sin la línea `tint`; se mantiene `autoMirrored`
+  para los idiomas que se escriben de derecha a izquierda).
+- Probado en el emulador: se abre el detalle, la pestaña Almacén sigue marcada y se vuelve con la
+  flecha y con el botón atrás del sistema.
+
+### Detalle de materia prima: pantalla
+- `DetalleMateriaPrimaViewModel` recupera el id de la ruta con `SavedStateHandle.toRoute()` y pide la
+  materia prima y su historial **a la vez** con `async`, en lugar de uno detrás de otro.
+- Tarjeta de stock: stock actual, aviso de bajo mínimo y mínimo. El precio solo aparece si llega
+  (solo al administrador, por el arreglo de costes), así que la pantalla no necesita saber el rol.
+  Se muestra por kilo, litro o unidad (`formatearPrecioUnitario`): 0,009 €/g se lee mejor como
+  9,00 €/kg.
+- Historial: tipo del movimiento («Producción #12», «Merma»…), fecha y hora, usuario, motivo y la
+  cantidad con signo (`+1.000 g`, `-150 g`) y en color: verde si entra y rojo si sale. Así se lee de
+  dos formas, también sin distinguir colores.
+- **Color verde añadido:** Material 3 no tiene un color de «éxito». Se añadieron `entradaLight`
+  (#1D6B3A) y `entradaDark` (#8BD79C), y `colorScheme.entrada` elige uno según lo oscuro que sea el
+  fondo del tema. Contraste comprobado: 6,2:1 en claro y 10,8:1 en oscuro (WCAG AA pide 4,5:1).
+- `EtiquetaAviso` se movió a `ui/componentes` para usarla en la lista y en el detalle.
+- Toda la pantalla es una sola `LazyColumn` (tarjeta, botones, título e historial se desplazan
+  juntos).
+- Probado en el emulador con los datos de ejemplo: la tarjeta y el historial se ven bien y las
+  fechas reales del backend se leen correctamente.
+
+### Detalle de materia prima: movimientos
+- Capa de datos: `MovimientoMateriaPrimaPeticion` (entrada y merma; la cantidad va siempre en
+  positivo y en la merma la resta el backend) y `AjusteMateriaPrimaPeticion` (se envía el stock real
+  contado y el backend calcula la diferencia). Nuevo `MovimientoRepository` con las tres llamadas
+  `POST`. Pruebas que comprueban el JSON exacto que se envía, porque un nombre de campo distinto del
+  backend provocaría un error de validación.
+- **Decisión de diseño: un solo formulario para los tres movimientos.** Entrada, merma y ajuste
+  tienen los mismos campos (cantidad y motivo); cambian los textos, si el motivo es obligatorio y la
+  dirección a la que se envía. `TipoFormularioMovimiento` guarda esas diferencias y viaja en la ruta
+  (`FormularioMovimientoRuta(id, nombre, tipo)`).
+- Las reglas están en `ReglasMovimiento.kt`, en funciones de Kotlin sin Compose ni Android, para
+  probarlas con pruebas unitarias rápidas (`ReglasMovimientoTest`, 9 pruebas):
+  - Se acepta coma o punto como separador decimal.
+  - «1.000» no se guarda como 1: tiene tres decimales y se rechaza («Como mucho dos decimales»), en
+    lugar de guardar 1 cuando el usuario quería decir mil.
+  - Las mismas reglas que el backend: cantidad mayor que 0, la merma no puede superar el stock, el
+    ajuste no puede dejar el mismo stock y el motivo es obligatorio en mermas y ajustes. La app las
+    repite para avisar al momento y al lado del campo; quien decide de verdad es el backend.
+- Formulario (boceto 05): X para cerrar sin guardar, la unidad fija al lado del número, teclado
+  numérico, el error o una ayuda debajo de cada campo, vista previa «Después de guardar» y sitio para
+  el teclado (`imePadding`). El `ViewModel` vuelve a pedir la materia prima al abrirse, borra el error
+  de un campo al escribir en él, evita enviar dos veces y muestra el mensaje del backend si lo rechaza.
+- Botones en el detalle con distinto peso visual: Entrada (relleno, la más habitual), Merma (tonal)
+  y Ajuste (con borde). El ajuste no aparece para el empleado; aun así, el backend responde 403 si un
+  empleado lo intenta.
+- **Problema encontrado: el historial no se actualizaba.** Después de guardar un movimiento, el
+  detalle seguía mostrando el stock y el historial de antes, y la lista del Almacén también. Causa:
+  cada `ViewModel` pedía los datos una sola vez, en su `init`, y al volver del formulario seguía vivo
+  con los datos viejos. El movimiento sí se guardaba: al volver a abrir el detalle aparecía.
+- Solución: se quitó la carga del `init` y cada pantalla usa `LifecycleResumeEffect`, que se ejecuta
+  cada vez que la pantalla pasa a estar visible y activa (al abrirla y al volver de otra). Si ya hay
+  datos, se siguen mostrando mientras llegan los nuevos, para que no parpadee.
+- Probado en el emulador: los movimientos se guardan y, al volver, el detalle muestra el stock
+  nuevo y el movimiento en el historial sin salir de la pantalla.
 
 ### Pendiente
-- Detalle de cada materia prima y producto, con sus movimientos (entrada, merma y ajuste). El
-  coste del producto solo se mostrará al administrador.
+- Comprobar la vista del empleado (sin el botón Ajuste) cuando exista la pantalla de usuarios.
+- Detalle de producto con su receta; el coste solo se mostrará al administrador.
 - Inicio definitivo, Producción y Ventas.
 - Menú de cuenta (contraseña, cerrar sesión, usuarios para el administrador).
