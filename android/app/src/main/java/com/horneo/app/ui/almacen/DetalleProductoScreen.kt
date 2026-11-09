@@ -51,6 +51,7 @@ fun DetalleProductoScreen(
     esAdmin: Boolean,
     onVolver: () -> Unit,
     onMovimiento: (TipoFormularioMovimiento) -> Unit,
+    onProducir: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: DetalleProductoViewModel = viewModel(factory = DetalleProductoViewModel.factory(esAdmin)),
 ) {
@@ -105,6 +106,18 @@ fun DetalleProductoScreen(
                 // Solo los elaborados tienen receta; los de reventa se compran ya hechos.
                 if (estadoActual.producto.tipo == TipoProducto.ELABORADO) {
                     seccionReceta(estadoActual.receta)
+                    // Atajo del boceto: abre «Registrar producción» con este producto ya elegido.
+                    item {
+                        Button(
+                            onClick = onProducir,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+                            Icon(painterResource(R.drawable.ic_bakery_dining), contentDescription = null)
+                            Text("Producir", modifier = Modifier.padding(start = 8.dp))
+                        }
+                    }
                 }
                 // Los movimientos de productos siempre son en unidades.
                 seccionHistorial(estadoActual.movimientos, Unidad.UNIDAD)

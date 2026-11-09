@@ -30,6 +30,7 @@ import com.horneo.app.ui.almacen.FormularioMovimientoScreen
 import com.horneo.app.ui.componentes.PantallaProvisional
 import com.horneo.app.ui.inicio.InicioScreen
 import com.horneo.app.ui.produccion.ProduccionScreen
+import com.horneo.app.ui.produccion.RegistrarProduccionScreen
 
 // Pantalla principal con sesión iniciada: barra inferior con las cuatro tareas del día a día
 // y, en el centro, la pantalla de la pestaña activa.
@@ -111,7 +112,8 @@ fun PantallaPrincipal(sesion: Sesion, modifier: Modifier = Modifier) {
                             navController.navigate(
                                 FormularioMovimientoRuta(ruta.id, ruta.nombre, tipo, ElementoMovimiento.PRODUCTO)
                             )
-                        }
+                        },
+                        onProducir = { navController.navigate(RegistrarProduccionRuta(ruta.id)) }
                     )
                 }
                 composable<FormularioMovimientoRuta> { entrada ->
@@ -126,10 +128,15 @@ fun PantallaPrincipal(sesion: Sesion, modifier: Modifier = Modifier) {
             }
             navigation<ProduccionGrafo>(startDestination = ProduccionRuta) {
                 composable<ProduccionRuta> {
-                    ProduccionScreen(onRegistrar = { navController.navigate(RegistrarProduccionRuta) })
+                    ProduccionScreen(onRegistrar = { navController.navigate(RegistrarProduccionRuta()) })
                 }
-                // De momento provisional: el formulario llega en el siguiente paso.
-                composable<RegistrarProduccionRuta> { PantallaProvisional("Registrar producción") }
+                composable<RegistrarProduccionRuta> {
+                    RegistrarProduccionScreen(
+                        // Cerrar y guardar vuelven a la pantalla anterior (la lista o el detalle del producto).
+                        onCerrar = { navController.popBackStack() },
+                        onGuardado = { navController.popBackStack() }
+                    )
+                }
             }
             composable<VentasRuta> { PantallaProvisional("Ventas") }
         }

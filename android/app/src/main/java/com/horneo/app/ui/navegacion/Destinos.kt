@@ -45,8 +45,12 @@ data object ProduccionGrafo
 @Serializable
 data object ProduccionRuta
 
+// productoId: si se abre desde el detalle de un producto, llega ya elegido. -1 significa "ninguno"
+// (se usa -1 en lugar de null porque es más sencillo para la navegación con tipos).
 @Serializable
-data object RegistrarProduccionRuta
+data class RegistrarProduccionRuta(val productoId: Long = SIN_PRODUCTO)
+
+const val SIN_PRODUCTO = -1L
 
 @Serializable
 data object VentasRuta
