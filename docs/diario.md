@@ -966,9 +966,66 @@ Sirve como base para redactar la memoria.
 - Probado en el emulador: el zumo se abre sin receta y con Entrada, Merma y Ajuste; el croissant
   solo muestra Merma y Ajuste y rechaza los decimales.
 
+### Producción: plan y decisiones
+- Siguiendo el boceto 07, en tres pasos: capa de datos, lista del día y formulario para registrar.
+- Lo que hace el backend al registrar (revisado antes de empezar): descuenta la receta × cantidad
+  de cada materia prima y suma la cantidad al stock del producto, todo o nada; rechaza productos de
+  reventa, productos sin receta y producciones sin stock suficiente. Lo pueden hacer los dos roles.
+- Decisión sobre cómo elegir el día de la lista: flechas ‹ › (lo más rápido para hoy y ayer, que es
+  el uso habitual) y, además, un calendario al tocar la fecha para saltar a cualquier día.
+
+### Producción: capa de datos
+- `ProduccionRespuesta` y `RegistrarProduccionPeticion` (solo producto y cantidad entera: el resto
+  lo calcula el backend).
+- `@Query("fecha")`: a diferencia de `@Path`, que pone el dato dentro de la ruta, añade un parámetro
+  al final de la URL (`api/producciones?fecha=2026-11-09`). `LocalDate.toString()` ya da el formato
+  ISO que espera el backend.
+
+### Producción: lista del día
+- `ListaUiState` y `ContenidoLista` se movieron del Almacén a `ui/componentes`, porque ahora también
+  los usa Producción. Se añadió `margenInferior` para que el botón flotante no tape la última fila.
+- Selector de día «‹ Hoy, 9 nov ›»: la flecha de la derecha se desactiva en hoy (no se puede mirar el
+  futuro) y al tocar la fecha se abre el `DatePickerDialog` de Material, con los días futuros
+  bloqueados. El calendario trabaja con milisegundos en UTC, así que la conversión con `LocalDate` se
+  hace siempre en UTC para no equivocarse de día por la diferencia horaria.
+- `formatearDia` («Hoy, 9 nov», «Ayer, 8 nov», «lun, 2 nov», con el año si es de otro año): los nombres
+  de meses y días se escribieron a mano, porque Java devuelve «nov.» (con punto) en las pruebas y
+  Android «nov», y así el resultado es siempre el mismo. Recibe «hoy» como parámetro para poder
+  probarla con cualquier fecha.
+- Si se cambia de día rápido, una respuesta lenta del día anterior podría llegar después y pisar la
+  lista correcta. Para evitarlo, al cambiar de día se cancela la petición anterior (`Job.cancel()`).
+- Botón flotante «Registrar producción». Producción es un subgrafo de navegación, como el Almacén.
+- Problema encontrado: al descargar los iconos nuevos (`ic_add`, `ic_chevron_left`,
+  `ic_chevron_right`), el comando que borraba la línea `android:tint` borró también el `>` que cerraba
+  la etiqueta en `ic_add.xml`, porque en ese archivo iban en la misma línea. Se reescribió el archivo
+  y se comprobó con `xmllint` que los tres iconos eran XML válido antes de compilar.
+- Probado en el emulador: las flechas cambian de día, la de la derecha se desactiva en hoy y el
+  calendario permite elegir un día pasado.
+
+### Producción: registrar
+- Las cuentas están en `ReglasProduccion.kt`, en funciones de Kotlin sin Compose (6 pruebas):
+  - `calcularConsumo`: receta × cantidad comparada con el stock de cada materia prima (cuánto hace
+    falta, cuánto hay y cuánto falta). Una materia prima que no aparece cuenta como stock 0.
+  - `maximoProducible`: para cada ingrediente, stock ÷ cantidad por unidad redondeado hacia abajo;
+    el máximo es el menor de todos, porque manda el ingrediente que menos alcanza. Ejemplo del
+    boceto: con 850 g de mantequilla y 25 g por croissant, como máximo 34.
+- Formulario (boceto 07): desplegable con los productos elaborados (`ExposedDropdownMenuBox`),
+  cantidad entera y vista previa «Se consumirá». Las materias primas que no alcanzan van con fondo
+  de error y el texto «faltan 150 g» (texto además de color). Si falta algo, el aviso dice cómo
+  arreglarlo («No hay suficiente mantequilla. Registra una entrada o produce como máximo 34 ud.») y
+  el botón se desactiva. El backend lo vuelve a comprobar, porque es quien tiene el stock real.
+- El `ViewModel` pide a la vez los productos y las materias primas, y al elegir un producto pide su
+  receta (cancelando la anterior si se cambia de producto).
+- Botón «Producir» en el detalle de los productos elaborados: abre el formulario con el producto ya
+  elegido (`RegistrarProduccionRuta(productoId)`; -1 significa «ninguno»).
+- Probado en el emulador: con una cantidad grande aparecen las faltas y el aviso con el máximo; con
+  una cantidad que alcanza, la producción se registra y aparece en la lista del día.
+- Con esto funciona el ciclo principal de la app: materias primas → receta → producción → stock del
+  producto.
+
 ### Pendiente
 - Comprobar la vista del empleado (sin el botón Ajuste ni el coste) cuando exista la pantalla de
   usuarios.
 - Gestión del administrador: altas y edición de materias primas y productos, y edición de recetas.
-- Inicio definitivo, Producción y Ventas.
+- Ventas e Inicio definitivo.
 - Menú de cuenta (contraseña, cerrar sesión, usuarios para el administrador).
