@@ -786,6 +786,29 @@ Sirve como base para redactar la memoria.
 - Lección: revisar el contrato de la API antes de hacer cada pantalla sirve también para encontrar
   fallos de seguridad que no se vieron al hacer el backend.
 
+### Almacén: lista de productos
+- La segunda pestaña del Almacén sigue el boceto 03: debajo del nombre, el tipo y el precio de
+  venta («Elaborado · 1,20 €»); a la derecha, el stock en unidades. Si el stock es 0, aparece la
+  etiqueta «Agotado», con el mismo estilo que «Bajo mínimo».
+- El precio de compra no se muestra en la lista. Según los bocetos, el coste va en el detalle del
+  producto y solo para el administrador. Por eso esta pantalla no necesita saber el rol.
+- **Decisión de diseño: una sola lógica para las dos listas.** Las dos pestañas tienen los mismos
+  estados (cargando, error con «Reintentar», vacía y con datos). En lugar de copiar el código de
+  materias primas para productos:
+  - El estado pasa a ser genérico, `ListaUiState<T>` (antes `MateriasPrimasUiState`). La `<T>`
+    funciona como en `List<T>` de Java: el mismo tipo vale para cualquier lista.
+  - El componente `ContenidoLista` dibuja cualquier lista según su estado. Cada pestaña solo le
+    pasa cómo se dibuja una fila (`FilaMateriaPrima` o `FilaProducto`).
+  - La etiqueta roja pasa a ser `EtiquetaAviso(texto)`, que sirve para los dos avisos.
+  - Así, cualquier cambio en cómo se muestran la carga o los errores se hace en un solo sitio.
+- El `ViewModel` pide las dos listas al abrir el Almacén, para que al cambiar de pestaña los
+  productos ya estén cargados. Cada pestaña tiene su propio «Reintentar».
+- Precios: nueva función `formatearPrecio` en `Formato.kt`. Los precios llevan siempre dos
+  decimales (1,20 €, 15,00 €), a diferencia de las cantidades, que quitan los ceros sobrantes. Con
+  su prueba en `FormatoTest` (12 pruebas unitarias en total, todas correctas).
+- Probado en el emulador desde Android Studio: aparecen los 6 productos de los datos de ejemplo,
+  con su tipo y su precio, y la Ensaimada con «Agotado».
+
 ### Repositorio
 - Problema encontrado: un `git add` con varias rutas, pegado en varias líneas, se ejecutó como
   varios comandos. Solo se añadió el primer archivo, y el commit salió con 1 archivo en vez de 5.
@@ -796,8 +819,7 @@ Sirve como base para redactar la memoria.
   arreglos de costes).
 
 ### Pendiente
-- Lista de productos (segunda pestaña del Almacén). El precio de compra solo se mostrará al
-  administrador.
-- Detalle de cada materia prima y producto, con sus movimientos (entrada, merma y ajuste).
+- Detalle de cada materia prima y producto, con sus movimientos (entrada, merma y ajuste). El
+  coste del producto solo se mostrará al administrador.
 - Inicio definitivo, Producción y Ventas.
 - Menú de cuenta (contraseña, cerrar sesión, usuarios para el administrador).
