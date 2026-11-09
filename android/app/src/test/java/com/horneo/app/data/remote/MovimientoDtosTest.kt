@@ -4,6 +4,7 @@ import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import java.math.BigDecimal
 import java.time.LocalDateTime
 
 class MovimientoDtosTest {
@@ -34,5 +35,36 @@ class MovimientoDtosTest {
         val fecha = json.decodeFromString(LocalDateTimeSerializer, "\"2026-11-09T07:40:00\"")
 
         assertEquals(LocalDateTime.of(2026, 11, 9, 7, 40), fecha)
+    }
+
+    @Test
+    fun escribeLaPeticionDeMermaComoLaEsperaElBackend() {
+        val peticion = MovimientoMateriaPrimaPeticion(3, BigDecimal("150.5"), "Caducada")
+
+        // Cantidad sin comillas y en positivo: el backend es quien la resta
+        assertEquals(
+            """{"materiaPrimaId":3,"cantidad":150.5,"motivo":"Caducada"}""",
+            json.encodeToString(peticion)
+        )
+    }
+
+    @Test
+    fun unaEntradaSinMotivoLoEnviaANull() {
+        val peticion = MovimientoMateriaPrimaPeticion(3, BigDecimal("1000"), null)
+
+        assertEquals(
+            """{"materiaPrimaId":3,"cantidad":1000,"motivo":null}""",
+            json.encodeToString(peticion)
+        )
+    }
+
+    @Test
+    fun escribeLaPeticionDeAjusteConElStockReal() {
+        val peticion = AjusteMateriaPrimaPeticion(3, BigDecimal("700.00"), "Recuento semanal")
+
+        assertEquals(
+            """{"materiaPrimaId":3,"stockReal":700.00,"motivo":"Recuento semanal"}""",
+            json.encodeToString(peticion)
+        )
     }
 }

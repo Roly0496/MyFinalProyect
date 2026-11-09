@@ -25,4 +25,15 @@ interface HorneoApi {
 
     @GET("api/productos")
     suspend fun productos(): List<ProductoRespuesta>
+
+    // Movimientos de materias primas. Los tres devuelven el movimiento creado (201 Created).
+    @POST("api/movimientos/entradas/materias-primas")
+    suspend fun entradaMateriaPrima(@Body peticion: MovimientoMateriaPrimaPeticion): MovimientoRespuesta
+
+    @POST("api/movimientos/mermas/materias-primas")
+    suspend fun mermaMateriaPrima(@Body peticion: MovimientoMateriaPrimaPeticion): MovimientoRespuesta
+
+    // Solo administrador: el backend responde 403 si lo intenta un empleado.
+    @POST("api/movimientos/ajustes/materias-primas")
+    suspend fun ajusteMateriaPrima(@Body peticion: AjusteMateriaPrimaPeticion): MovimientoRespuesta
 }

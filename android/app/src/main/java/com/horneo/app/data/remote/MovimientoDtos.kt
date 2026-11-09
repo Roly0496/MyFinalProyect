@@ -35,3 +35,22 @@ data class MovimientoRespuesta(
     val produccionId: Long?,
     val ventaId: Long?,
 )
+
+// Petición de entrada y de merma (MovimientoMateriaPrimaPeticion en el backend).
+// La cantidad va siempre en positivo: en las mermas es el backend quien la convierte en negativa.
+@Serializable
+data class MovimientoMateriaPrimaPeticion(
+    val materiaPrimaId: Long,
+    @Serializable(with = BigDecimalSerializer::class) val cantidad: BigDecimal,
+    // Opcional en las entradas y obligatorio en las mermas (lo comprueba el backend).
+    val motivo: String?,
+)
+
+// Petición de ajuste (AjusteMateriaPrimaPeticion en el backend). No se envía la diferencia,
+// sino el stock real que se ha contado: el backend calcula cuánto hay que sumar o restar.
+@Serializable
+data class AjusteMateriaPrimaPeticion(
+    val materiaPrimaId: Long,
+    @Serializable(with = BigDecimalSerializer::class) val stockReal: BigDecimal,
+    val motivo: String,
+)
