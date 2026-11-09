@@ -31,6 +31,7 @@ import com.horneo.app.ui.componentes.PantallaProvisional
 import com.horneo.app.ui.inicio.InicioScreen
 import com.horneo.app.ui.produccion.ProduccionScreen
 import com.horneo.app.ui.produccion.RegistrarProduccionScreen
+import com.horneo.app.ui.ventas.VentasScreen
 
 // Pantalla principal con sesión iniciada: barra inferior con las cuatro tareas del día a día
 // y, en el centro, la pantalla de la pestaña activa.
@@ -138,7 +139,18 @@ fun PantallaPrincipal(sesion: Sesion, modifier: Modifier = Modifier) {
                     )
                 }
             }
-            composable<VentasRuta> { PantallaProvisional("Ventas") }
+            navigation<VentasGrafo>(startDestination = VentasRuta) {
+                composable<VentasRuta> {
+                    VentasScreen(
+                        esAdmin = sesion.rol == Rol.ADMIN,
+                        onNuevaVenta = { navController.navigate(NuevaVentaRuta) },
+                        onVenta = { venta -> navController.navigate(TicketRuta(venta.id)) }
+                    )
+                }
+                // De momento provisionales: llegan en los siguientes pasos.
+                composable<NuevaVentaRuta> { PantallaProvisional("Nueva venta") }
+                composable<TicketRuta> { PantallaProvisional("Ticket") }
+            }
         }
     }
 }

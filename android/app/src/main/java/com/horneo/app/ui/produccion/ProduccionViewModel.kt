@@ -31,10 +31,6 @@ class ProduccionViewModel(private val produccionRepository: ProduccionRepository
     // así una respuesta lenta de un día anterior no puede pisar la del día que se está mirando.
     private var carga: Job? = null
 
-    fun diaAnterior() = elegirDia(_dia.value.minusDays(1))
-
-    fun diaSiguiente() = elegirDia(_dia.value.plusDays(1))
-
     fun elegirDia(nuevoDia: LocalDate) {
         // No se puede mirar el futuro: todavía no se ha producido nada.
         if (nuevoDia.isAfter(LocalDate.now()) || nuevoDia == _dia.value) return

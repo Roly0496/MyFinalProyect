@@ -52,13 +52,23 @@ data class RegistrarProduccionRuta(val productoId: Long = SIN_PRODUCTO)
 
 const val SIN_PRODUCTO = -1L
 
+// Ventas también es un subgrafo: la lista del día, la nueva venta y el ticket.
+@Serializable
+data object VentasGrafo
+
 @Serializable
 data object VentasRuta
+
+@Serializable
+data object NuevaVentaRuta
+
+@Serializable
+data class TicketRuta(val ventaId: Long)
 
 // Pestañas de la barra inferior, en el orden en que aparecen.
 enum class Pestana(val ruta: Any, val etiqueta: String, @DrawableRes val icono: Int) {
     INICIO(InicioRuta, "Inicio", R.drawable.ic_home),
     ALMACEN(AlmacenGrafo, "Almacén", R.drawable.ic_inventory_2),
     PRODUCCION(ProduccionGrafo, "Producción", R.drawable.ic_bakery_dining),
-    VENTAS(VentasRuta, "Ventas", R.drawable.ic_point_of_sale),
+    VENTAS(VentasGrafo, "Ventas", R.drawable.ic_point_of_sale),
 }
