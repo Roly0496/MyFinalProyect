@@ -1,10 +1,13 @@
 package com.horneo.app.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 
 private val LightColorScheme = lightColorScheme(
     primary = primaryLight,
@@ -105,6 +108,12 @@ private val DarkColorScheme = darkColorScheme(
     onTertiaryFixed = onTertiaryFixedDark,
     onTertiaryFixedVariant = onTertiaryFixedVariantDark,
 )
+
+// Verde para las cantidades que entran en el stock (las que salen usan el rojo de error del tema).
+// Material 3 no tiene un color de «éxito», así que se añade aparte. Se elige según el fondo del tema
+// (oscuro o claro), así siempre va a juego con el modo activo. Contraste: 6,2:1 en claro y 10,8:1 en oscuro.
+val ColorScheme.entrada: Color
+    get() = if (background.luminance() < 0.5f) entradaDark else entradaLight
 
 // No se usa el color dinámico de Android 12+ (Material You): la app mantiene siempre
 // los colores de la marca en lugar de tomarlos del fondo de pantalla del móvil.

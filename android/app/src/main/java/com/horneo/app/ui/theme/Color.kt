@@ -102,3 +102,7 @@ val tertiaryFixedDark = Color(0xFFE7E5AC)
 val tertiaryFixedDimDark = Color(0xFFCBC992)
 val onTertiaryFixedDark = Color(0xFF1D1D00)
 val onTertiaryFixedVariantDark = Color(0xFF49491E)
+
+// Color añadido aparte (no es de Material 3): verde para las cantidades que entran en el stock.
+val entradaLight = Color(0xFF1D6B3A)
+val entradaDark = Color(0xFF8BD79C)

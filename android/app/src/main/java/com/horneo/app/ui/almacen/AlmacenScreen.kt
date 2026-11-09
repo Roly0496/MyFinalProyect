@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -16,7 +15,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -34,6 +32,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.horneo.app.data.remote.MateriaPrimaRespuesta
 import com.horneo.app.data.remote.ProductoRespuesta
 import com.horneo.app.data.remote.TipoProducto
+import com.horneo.app.ui.componentes.EtiquetaAviso
 import com.horneo.app.ui.formatearCantidad
 import com.horneo.app.ui.formatearPrecio
 
@@ -168,20 +167,4 @@ private fun FilaProducto(producto: ProductoRespuesta) {
             }
         }
     )
-}
-
-// El aviso lleva texto además de color, para que se entienda aunque no se distinga el rojo.
-@Composable
-private fun EtiquetaAviso(texto: String) {
-    Surface(
-        color = MaterialTheme.colorScheme.errorContainer,
-        contentColor = MaterialTheme.colorScheme.onErrorContainer,
-        shape = RoundedCornerShape(8.dp)
-    ) {
-        Text(
-            texto,
-            style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-        )
-    }
 }
