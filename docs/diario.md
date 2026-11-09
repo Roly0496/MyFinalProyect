@@ -1023,9 +1023,62 @@ Sirve como base para redactar la memoria.
 - Con esto funciona el ciclo principal de la app: materias primas → receta → producción → stock del
   producto.
 
+### Ventas: plan
+- Siguiendo los bocetos 08 y 09, en cuatro pasos: capa de datos, lista del día con la caja, nueva
+  venta y ticket. Los bocetos aprobados ya lo dejaban claro, así que no hizo falta ninguna decisión
+  nueva.
+- Lo que hace el backend (revisado antes de empezar): `POST /api/ventas` recibe las líneas (producto
+  y cantidad) y devuelve el ticket con el precio de cada producto copiado en el momento de la venta;
+  es todo o nada (si falta stock de un producto, no se guarda ninguna línea). La caja del día
+  (`GET /api/ventas/caja`) es solo para el administrador.
+
+### Ventas: capa de datos
+- `VentaRespuesta`, `LineaVentaRespuesta`, `TicketRespuesta`, `CajaRespuesta` y las peticiones.
+  La petición solo lleva productos y cantidades: el precio y el total los pone el backend, así nadie
+  puede enviar un precio inventado desde el móvil.
+- `LocalDateSerializer` para la fecha de la caja (sin hora).
+- `VentaRepository.registrar` recibe un mapa producto → cantidad, que es justo lo que lleva el carrito.
+
+### Ventas: lista del día
+- El selector de día y el calendario se sacaron de Producción a `ui/componentes/SelectorDia.kt`, con
+  una sola función `onCambiarDia`, y ahora lo usan las dos pestañas.
+- Para el administrador, una tarjeta «Caja del día» con el total y el número de ventas. Para el
+  empleado ni siquiera se pide (el backend respondería 403): la fábrica del `ViewModel` recibe el rol,
+  como en el detalle de producto.
+- Cada venta abre su ticket al tocarla. Botón flotante «Nueva venta».
+- Probado en el emulador: sale la caja y funcionan las flechas.
+
+### Ventas: nueva venta
+- Las reglas del carrito están en `ReglasVenta.kt` (7 pruebas). El carrito es un mapa inmutable
+  producto → unidades: cada operación devuelve uno nuevo.
+  - No se puede pasar del stock y un producto agotado no se puede añadir.
+  - Al llegar a 0, el producto sale del carrito: nunca se envía una línea con cantidad 0.
+  - El total (Σ precio × cantidad) es orientativo: el de verdad lo calcula el backend al cobrar.
+  - `ajustarAlStock`: si el stock cambia mientras se prepara la venta (otra persona vende a la vez),
+    el carrito se recorta y quita lo agotado. Se usa si el backend rechaza la venta: se muestra su
+    mensaje y se vuelve a pedir el stock.
+- Pantalla (boceto 08), pensada para el mostrador: botones − / + de 48 dp (el mínimo recomendado para
+  tocar con el dedo), con descripción para TalkBack que nombra el producto («Añadir un Croissant»).
+  Los agotados salen atenuados. Abajo, los artículos, el total y el botón Cobrar.
+- Al cobrar, el ticket sustituye a la pantalla de venta (`popUpTo`), para que al salir se vuelva a
+  la lista y no a una venta ya cobrada.
+- Icono `ic_remove`: esta vez se quitó solo el atributo `android:tint` (con una expresión regular)
+  y no la línea entera, para no repetir el problema de `ic_add`, y se validó con `xmllint`.
+- Probado en el emulador: se cobra y se vuelve a la lista de ventas.
+
+### Ventas: ticket
+- El ticket siempre se pide al backend por su id, al cobrar y al abrirlo desde la lista: una sola
+  forma de cargarlo, y lo que se ve es lo que está guardado.
+- Si se acaba de cobrar (`TicketRuta(ventaId, recienCobrada = true)`), muestra «Venta registrada» con
+  una marca verde y los botones «Nueva venta» y «Volver a ventas»; desde la lista, solo el ticket.
+- Se borró `PantallaProvisional.kt`: era el hueco temporal de las pestañas sin hacer y ya no lo usaba
+  ninguna pantalla.
+- Probado en el emulador: el ticket sale bien.
+- Con esto la app cubre el ciclo completo de la panadería: comprar materia prima, producir y vender.
+
 ### Pendiente
-- Comprobar la vista del empleado (sin el botón Ajuste ni el coste) cuando exista la pantalla de
-  usuarios.
+- Comprobar la vista del empleado (sin el botón Ajuste, el coste ni la caja) cuando exista la
+  pantalla de usuarios.
 - Gestión del administrador: altas y edición de materias primas y productos, y edición de recetas.
-- Ventas e Inicio definitivo.
+- Inicio definitivo.
 - Menú de cuenta (contraseña, cerrar sesión, usuarios para el administrador).
