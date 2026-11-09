@@ -4,6 +4,7 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface HorneoApi {
 
@@ -60,4 +61,11 @@ interface HorneoApi {
     // Solo administrador.
     @POST("api/movimientos/ajustes/productos")
     suspend fun ajusteProducto(@Body peticion: AjusteProductoPeticion): MovimientoRespuesta
+
+    // Producciones de un día. @Query añade el parámetro a la URL: api/producciones?fecha=2026-11-09
+    @GET("api/producciones")
+    suspend fun producciones(@Query("fecha") fecha: String): List<ProduccionRespuesta>
+
+    @POST("api/producciones")
+    suspend fun registrarProduccion(@Body peticion: RegistrarProduccionPeticion): ProduccionRespuesta
 }
